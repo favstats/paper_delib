@@ -6,13 +6,6 @@ lubripack::lubripack("tidyverse", "haven","sjmisc",
                      "semTools", "lavaan.survey",
                      "survey", "reshape2", "favstats")
 
-#needed.packages <- c("ggplot2","ggthemes", "car", "lattice", "base", "foreign", 
-#                     "rJava", "xlsx", "stargazer", "plyr", "MASS", "scales", 
-#                     "texreg", "gdata", "png", "knitr", "xlsx", "sjPlot",
-#                     "sjmisc", "xtable", "texreg", "gridExtra","stats","foreign",
-#                     "lmtest","lme4","FactoMineR","psych","corrplot","sjstats","haven","reshape2")
-
-#lapply(needed.packages, require, character.only = TRUE)
 path_data <- "C:/Users/Fabio/Dropbox/Bächtiger HA SS17/Daten/"
 setwd(path_data)
 
