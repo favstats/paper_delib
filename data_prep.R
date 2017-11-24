@@ -13,7 +13,7 @@ lubripack::lubripack("tidyverse", "haven","sjmisc",
 #                     "lmtest","lme4","FactoMineR","psych","corrplot","sjstats","haven","reshape2")
 
 #lapply(needed.packages, require, character.only = TRUE)
-path_data <- "C:/Users/Fabio/Dropbox/Bächtiger HA SS17/Daten/"
+path_data <- "C:/Users/Fabio/Dropbox/B?chtiger HA SS17/Daten/"
 setwd(path_data)
 
 #######load URLs####
@@ -57,11 +57,11 @@ load(afro6_url)
 
 ##
 #head(afro5$COUNTRY_ALPHA,1) # Ethiopia
-#head(afro6$COUNTRY_R5List,1) # Gabon und Sao Tomé
+#head(afro6$COUNTRY_R5List,1) # Gabon und Sao Tom?
 
 #table(afro5$cntry,afro5$DATEINTR)
 
-#Code um alle Variablen zu Numeric zu ändern
+#Code um alle Variablen zu Numeric zu ?ndern
 #afro5 <- mutate_if(afro5, .predicate = is.double, .funs = as.numeric)
 
 #glimpse(afro5)
@@ -98,7 +98,7 @@ afro_5 <- afro5  %>%
                        "1 = 0;
                   2 = 1;
                   3 = 1"),
-         age = Recode(Q1, #missing values löschen
+         age = Recode(Q1, #missing values l?schen
                       "-1 = NA;
                                   998 = NA;
                                   999 = NA"),
@@ -146,7 +146,7 @@ afro_6 <- afro6 %>%
                        "1 = 0;
                        2 = 1;
                        3 = 1"),
-         age = Recode(Q1, #missing values löschen
+         age = Recode(Q1, #missing values l?schen
                       "-1 = NA;
                       998 = NA;
                       999 = NA"),
@@ -526,7 +526,7 @@ asian_3 <- asian_raw %>%
          income = 5 - income,
          work = Recode(work, #work (0/1) codieren
                        "2 = 0"),
-         age = Recode(se3a, #missing values löschen
+         age = Recode(se3a, #missing values l?schen
                       "-1 = NA"),
          demtoday = Recode(q91,
                            "-1 = NA;
@@ -581,7 +581,7 @@ needed <- function (data) {
                            "0 = NA"),
            work = Recode(work, #work (0/1) codieren
                          "2 = 0"),
-           age = Recode(se3_2, #missing values löschen
+           age = Recode(se3_2, #missing values l?schen
                         "-1 = NA"),
            demtoday = Recode(q94,
                              "-1 = NA;
@@ -725,7 +725,7 @@ afro$survey <- rep("afro",nrow(afro))
 #nrow(americas)
 
 americas$cntry<-as.character(americas$cntry)
-americas$cntry[americas$cntry=="Haití"] <- "Haiti"
+americas$cntry[americas$cntry=="Hait?"] <- "Haiti"
 
 library(countrycode)
 #?countrycode
@@ -823,8 +823,8 @@ table(merged$ESS)
 #merged<-subset(merged,merged$cntry!="Yemen" | merged$year!=2014) #exclude Mali 2012
 #merged<-subset(merged,merged$cntry!="Palestine, State of") #exclude Palestine 2013
 
-#merged<-subset(merged,merged$cntry!="Zambia" | merged$year!=2012) # nur 8 Fälle
-#merged<-subset(merged,merged$cntry!="Nigeria" | merged$year!=2013) # nur 36 Fälle
+#merged<-subset(merged,merged$cntry!="Zambia" | merged$year!=2012) # nur 8 F?lle
+#merged<-subset(merged,merged$cntry!="Nigeria" | merged$year!=2013) # nur 36 F?lle
 #table(merged2$cntry,merged2$year)
 
 #merged <- cbind(merged,data.frame(dummy.code(merged$year)))
@@ -1405,130 +1405,6 @@ tabeletto<-as.data.frame(cbind(table_stuff$regions,
                                as.character(tabeletto$culreg)))
 tabeletto <- tabeletto[order(tabeletto$V1, tabeletto$V3),]
 #edit(tabeletto)
-
-culreg  <-  c("Eastern Europe",
-              "Post-Communist",
-              "Post-Communist",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Post-Communist",
-              "Post-Communist",
-              "Eastern Europe",
-              "Post-Communist",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Post-Communist",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Post-Communist",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Post-Communist",
-              "Eastern Europe",
-              "Eastern Europe",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "Latin America",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "MENA",
-              "Indic East",
-              "Indic East",
-              "Indic East",
-              "Indic East",
-              "Indic East",
-              "Indic East",
-              "Indic East",
-              "Sinic East",
-              "Sinic East",
-              "Sinic East",
-              "Sinic East",
-              "Sinic East",
-              "Sinic East",
-              "Indic East",
-              "MENA",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "Subsaharan Africa",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West",
-              "West")
 
 culreg<-data.frame(cbind(tabeletto,culreg))
 culreg<-culreg[,c(2,4)]
