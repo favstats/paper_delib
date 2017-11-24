@@ -13,7 +13,7 @@ lubripack::lubripack("tidyverse", "haven","sjmisc",
 #                     "lmtest","lme4","FactoMineR","psych","corrplot","sjstats","haven","reshape2")
 
 #lapply(needed.packages, require, character.only = TRUE)
-path_data <- "C:/Users/Fabio/Dropbox/B?chtiger HA SS17/Daten/"
+path_data <- "C:/Users/Fabio/Dropbox/Bächtiger HA SS17/Daten/"
 setwd(path_data)
 
 #######load URLs####
