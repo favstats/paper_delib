@@ -1178,17 +1178,18 @@ table_stuff  <- combined %>% dplyr::select(cntry, gov_trust,
 table_stuff$gov_trust <- range01(table_stuff$gov_trust)*100
 table_stuff$demtoday <- range01(table_stuff$demtoday)*100
 
-table_stuff <- ddply(table_stuff,~cntry,
-                     summarise,mean_gov=mean(gov_trust,na.rm=T),
-                     mean_dem=mean(demtoday,na.rm=T))
+table_stuff <- plyr::ddply(table_stuff, ~cntry,
+                     summarise,
+                     mean_gov = mean(gov_trust, na.rm=T),
+                     mean_dem = mean(demtoday, na.rm=T),
+                      discuss = mean(discuss, na.rm=T))
 
-table_stuff <- merge(table_stuff, aggrdelib, by="cntry")
-table_stuff <- merge(table_stuff, physi2, by="cntry")
-table_stuff <- merge(table_stuff, physi22000, by="cntry")
-table_stuff <- merge(table_stuff, physi_22, by="cntry")
-table_stuff <- merge(table_stuff, physigni2, by="cntry")
-#table_stuff <- merge(table_stuff, physiff2, by="cntry")
 
+table_stuff$mean_gov8 <- table_stuff$mean_gov
+table_stuff$mean_gov8[is.na(table_stuff$mean_gov8)]<-999
+
+table_stuff$mean_gov9 <- table_stuff$mean_gov
+table_stuff$mean_gov9[is.na(table_stuff$mean_gov9)]<-999
 
 table_stuff$mean_gov8[table_stuff$discuss2==2] <- table_stuff$mean_gov8[table_stuff$discuss2==2] *.9
 table_stuff$mean_gov8[table_stuff$discuss2==1] <- table_stuff$mean_gov8[table_stuff$discuss2==1] *.85
@@ -1202,8 +1203,6 @@ table_stuff$mean_gov9[table_stuff$discuss2==1] <- table_stuff$mean_gov9[table_st
 table_stuff$mean_gov9[table_stuff$mean_gov9>100] <- NA
 table(table_stuff$mean_gov9)
 
-cmpr <- table_stuff %>% filter(discuss2 < 2) %>% 
-  dplyr::select(cntry,mean_gov6,mean_gov7,mean_gov8,mean_gov9)
 
 
 table_stuff2<-subset(table_stuff,
