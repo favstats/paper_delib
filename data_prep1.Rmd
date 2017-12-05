@@ -912,7 +912,7 @@ vdem <- vdems_start %>%
            rowMeans) %>%
   mutate(gdp10 = vdems_sub %>% 
            dcast(country_name ~ year, 
-                 value.var=c("e_GDP_Per_Cap_Haber_Men_2")) %>%
+                 value.var=c("e_GDP_Per_Cap_Haber_Men_2")) %>% #HIER MÜSSTE MAN 8 JAHRE GDP auswählen
            select(`2000`:`2010`) %>%
            rowMeans) %>%
   mutate(riw10 = vdems_sub %>% 
