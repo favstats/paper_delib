@@ -1,0 +1,1941 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Loading the Packages
+
+```{r}
+library(pacman)
+
+p_load(tidyverse, haven,sjmisc,
+                     forcats, weights, car,
+                     countrycode, lavaan,
+                     semTools, lavaan.survey,
+                     survey, reshape2, favstats)
+```
+
+# Loading the URLs
+
+```{r}
+afro5_url        <-url('https://github.com/favstats/database_delib/raw//master/afro5.RData')
+afro6_url        <-url('https://github.com/favstats/database_delib/raw//master/afro6.RData')
+
+latino2013_url   <-url('https://github.com/favstats/database_delib/raw//master/latino2013.RData')
+latino2015_url   <-url('https://github.com/favstats/database_delib/raw//master/latino2015.RData')
+
+wvs_raw_url      <-url('https://github.com/favstats/database_delib/raw//master/wvs_raw.RData')
+
+americas_url     <-url('https://github.com/favstats/database_delib/raw//master/americas.RData')
+bolivia_url      <-url('https://github.com/favstats/database_delib/raw//master/bolivia.RData')
+canada_url       <-url('https://github.com/favstats/database_delib/raw//master/canada.RData')
+
+asian_raw_url    <-url('https://github.com/favstats/database_delib/raw//master/asian_raw.RData')
+myanmar_raw_url  <-url('https://github.com/favstats/database_delib/raw//master/myanmar_raw.RData')
+mongolia_raw_url <-url('https://github.com/favstats/database_delib/raw//master/mongolia_raw.RData')
+philip_raw_url   <-url('https://github.com/favstats/database_delib/raw//master/philip_raw.RData')
+taiwan_raw_url   <-url('https://github.com/favstats/database_delib/raw//master/taiwan_raw.RData')
+thai_raw_url     <-url('https://github.com/favstats/database_delib/raw//master/thai_raw.RData')
+malay_raw_url    <-url('https://github.com/favstats/database_delib/raw//master/malay_raw.RData')
+singapore_raw_url<-url('https://github.com/favstats/database_delib/raw//master/singapore_raw.RData')
+sk_raw_url       <-url('https://github.com/favstats/database_delib/raw//master/sk_raw.RData')
+cambodia_raw_url <-url('https://github.com/favstats/database_delib/raw//master/cambodia_raw.RData')
+
+ESS_raw_url      <-url('https://github.com/favstats/database_delib/blob/master/ESS_raw.Rdata?raw=true')
+
+vdems_start_url  <-url('https://github.com/favstats/database_delib/raw//master/vdems_start.Rdata')
+
+qog_url          <-url('https://github.com/favstats/database_delib/raw//master/qog.Rdata')
+
+```
+
+
+# Afrobarometer Data
+
+## Afro 5
+
+```{r}
+load(afro5_url)
+
+delete_na_afro <- function(x) {
+  x<-Recode(x, "9 = NA;
+            98 = NA;
+            99 = NA;
+            -1 = NA")
+  return(x)
+} #Funktion um die NAs im Afro Datensatz zu bestimmen
+
+# alle Variablen
+afro_5 <- afro5  %>% 
+  rename(educ = Q97,          #Variablen umbenennen
+         income = Q3B, 
+         sex = Q101, 
+         work = Q96,
+         trust_gov = Q59A,
+         trust_parliament = Q59B,
+         trust_police = Q59H,
+         trust_courts = Q59J,
+         demtoday = Q46A) %>%
+  mutate_at(vars(income, trust_gov, trust_parliament, 
+                 trust_police, trust_courts, work), 
+            delete_na_afro) %>%   #NAs deleten 
+  mutate(sex = sex - 1,   #sex (0/1) codieren
+         work = Recode(work, #work (0/1) codieren
+                       "1 = 0;
+                  2 = 1;
+                  3 = 1"),
+         age = Recode(Q1, #missing values l?schen
+                      "-1 = NA;
+                                  998 = NA;
+                                  999 = NA"),
+         demtoday = Recode(demtoday,
+                           "-1 = NA;
+                                   98 = NA;
+                                   99 = NA"),
+         educ = Recode(educ,
+                       "-1 = NA;
+                                   98 = NA;
+                                   99 = NA;
+                                  999 = NA"),
+         cntry = to_label(COUNTRY_ALPHA),
+         year = as.numeric(format(DATEINTR,'%Y'))) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+
+afro_5
+```
+
+## Afro 6
+
+```{r}
+load(afro6_url)
+
+afro_6 <- afro6 %>%
+  rename(educ = Q97, 
+         income = Q4B, 
+         sex = Q101, 
+         work = Q95,
+         trust_gov = Q52A,
+         trust_parliament = Q52B,
+         trust_police = Q52H,
+         trust_courts = Q52J,
+         demtoday = Q40)%>%
+  mutate_at(vars(income, demtoday, trust_gov, 
+                 trust_parliament, trust_police, 
+                 trust_courts, work), 
+            delete_na_afro) %>%   #NAs deleten 
+  mutate(sex = sex - 1,   #sex (0/1) codieren
+         work = Recode(work, #work (0/1) codieren
+                       "1 = 0;
+                       2 = 1;
+                       3 = 1"),
+         age = Recode(Q1, #missing values l?schen
+                      "-1 = NA;
+                      998 = NA;
+                      999 = NA"),
+         educ = Recode(educ,
+                       "-1 = NA;
+                       98 = NA;
+                       99 = NA;
+                       999 = NA"),
+         demtoday = Recode(demtoday, 
+                           "8 = NA"),
+         cntry = to_label(COUNTRY_R5List),
+         year = as.numeric(format(DATEINTR,'%Y'))) %>%
+  select(cntry,year,age,sex, income, 
+         educ, work, demtoday, 
+         trust_gov, trust_parliament, 
+         trust_police, trust_courts) %>%
+#  mutate_at(vars(income, demtoday, educ, age,
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.character) %>%
+#  mutate_at(vars(income, demtoday, educ, age,
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+afro_6
+
+```
+
+## Merging the Data
+
+```{r}
+afro_real <- afro_5 %>% select(cntry,year,
+                                     educ,income,sex,age,work,
+                                     demtoday,trust_gov, trust_parliament, 
+                                     trust_police,trust_courts)
+
+afro_real2 <- afro_6 %>% select(cntry,year,
+                                      educ,income,sex,age,work,
+                                      demtoday,trust_gov, trust_parliament, 
+                                      trust_police,trust_courts)
+#length(unique(afro_real$cntry))
+#length(unique(afro_real2$cntry))
+#table(afro_real2$year)
+
+afro <- rbind(afro_real,afro_real2) %>% as.tbl()
+
+afro
+```
+
+# Latino Barometro
+
+## Latino 2013
+
+```{r}
+load(latino2013_url)
+
+latino_2013 <-latino2013 %>% 
+  rename(educ = REEDUC_1,
+         income = S6,
+         demtoday = P50TGB.A,
+         age = S11) %>%
+  mutate(sex = S10 - 1, #sex variable erstellen
+         cntry = to_label(IDENPA), #cntry variable erstellen
+         trust_gov = 5-P26TGB.B,
+         trust_parliament = 5-P26TGB.C,
+         trust_police = 5-P28TGB.B,
+         trust_courts = 5-P26TGB.E,
+         year = 2013,
+         income = 5 - income,
+         work = Recode(S19.A,
+                           "2 = 1;
+                            3 = 1;
+                            4 = 0;
+                            5 = 0;
+                            6 = 0;
+                            7 = 0")) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.character) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+  
+latino_2013
+```
+
+## Latino 2015
+
+```{r}
+load(latino2015_url)
+
+latino_2015 <-latino2015 %>% 
+  mutate(sex = S12 - 1) %>% #sex variable erstellen
+  rename(educ = REEDUC_1,
+         income = S4,
+         demtoday = P17STGBS,
+         age = S13) %>%
+  mutate(trust_gov = 5-P16ST.G,
+         trust_parliament = 5-P16ST.F,
+         trust_police = 5-P16TGB.B,
+         trust_courts = 5-P16ST.H,
+         work = Recode(S21.A,
+                           "2 = 1;
+                            3 = 1;
+                            4 = 0;
+                            5 = 0;
+                            6 = 0;
+                            7 = 0"),
+         cntry = to_label(IDENPA),
+         income = 5 - income,
+         year = 2015) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#                                as.character) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#                                as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+                                range01)
+
+latino_2015
+```
+
+## Merging the Data
+
+```{r}
+latino_real <- latino_2013 %>% select(cntry,year,
+                                      educ,income,sex,age,work,
+                                      demtoday,trust_gov, trust_parliament, 
+                                      trust_police,trust_courts)
+
+latino_real2 <- latino_2015 %>% select(cntry,year,
+                                       educ,income,sex,age,work,
+                                       demtoday,trust_gov, trust_parliament, 
+                                       trust_police,trust_courts)
+#length(unique(afro_real$cntry))
+#length(unique(afro_real2$cntry))
+#table(afro_real2$year)
+
+latino <- rbind(latino_real,latino_real2) %>% as.tbl()
+
+latino
+
+```
+
+
+
+# World Value Survey
+
+```{r}
+load(wvs_raw_url)
+
+wvs <-wvs_raw %>% 
+  rename(educ = V248,
+         income = V239,
+         demtoday = V141,
+         age = V242,
+         year = V262) %>%
+  mutate(sex = V240 -1,  #sex variable erstellen
+         trust_gov = 5-V115,
+         trust_parliament = 5-V117,
+         trust_police = 5-V113,
+         trust_courts = 5-V114,
+         work = Recode(V229,
+                       "2 = 1;
+                       3 = 1;
+                       4 = 0;
+                       5 = 0;
+                       6 = 0;
+                       7 = 0;
+                       8 = 0"),
+         cntry = to_label(V2)) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, 
+         trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            as.character) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+
+
+
+wvs
+```
+
+# Americas Barometer
+
+## Americas Main
+
+```{r}
+load(americas_url)
+
+americas_ <- americas %>%
+  mutate(cntry = to_label(pais)) %>%
+  select(cntry, ocup4a, ed, q10new, q1, q2, 
+         b10a, b13, b18, b21a, n3, year) %>%
+  rename(work = ocup4a,
+         educ = ed,
+         income = q10new,
+         sex = q1,
+         age = q2,
+         trust_courts = b10a,
+         trust_parliament = b13,
+         trust_police = b18,
+         trust_gov = b21a,
+         demtoday = n3) %>%
+  mutate(sex = sex -1,  #sex variable erstellen
+         work = Recode(work,
+                      "2 = 1;
+                       3 = 1;
+                       4 = 0;
+                       5 = 0;
+                       6 = 0;
+                       7 = 0")) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+
+americas_
+```
+
+
+## Bolivia
+
+```{r}
+load(bolivia_url)
+
+bolivia_ <- bolivia %>%
+  mutate(cntry = to_label(pais)) %>%
+  select(cntry, ocup4a, ed, q10new, q1, q2, 
+         b10a, b13, b18, b21a, n3, year) %>%
+  rename(work = ocup4a,
+         educ = ed,
+         income = q10new,
+         sex = q1,
+         age = q2,
+         trust_courts = b10a,
+         trust_parliament = b13,
+         trust_police = b18,
+         trust_gov = b21a, #viele missing values
+         demtoday = n3) %>%
+  mutate(sex = sex -1,  #sex variable erstellen
+         work = Recode(work,
+                       "2 = 1;
+                       3 = 1;
+                       4 = 0;
+                       5 = 0;
+                       6 = 0;
+                       7 = 0")) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)        
+
+bolivia_
+```
+
+## Canada
+
+```{r}
+load(canada_url)
+
+canada_ <- canada %>%
+  mutate(cntry = to_label(pais)) %>%
+  select(cntry, exc13, education, q10, q1, q2, 
+         b10a, b13, b18, b21a, n3, year) %>%
+  rename(work = exc13,
+         educ = education,
+         income = q10,
+         sex = q1,
+         age = q2,
+         trust_courts = b10a,
+         trust_parliament = b13,
+         trust_police = b18,
+         trust_gov = b21a,
+         demtoday = n3) %>%
+  mutate(sex = sex -1,  #sex variable erstellen
+         work = work - 1,
+         income = ifelse(income == 88, NA, income)) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)        
+
+canada_
+```
+
+## Merging the Data
+
+```{r}
+americas <- americas_ %>% dplyr::select(cntry,year,
+                                       educ,income,sex,age,work,
+                                       demtoday,trust_gov, trust_parliament, 
+                                       trust_police,trust_courts)
+
+bolivia <- bolivia_ %>% dplyr::select(cntry,year,
+                                      educ,income,sex,age,work,
+                                      demtoday,trust_gov, trust_parliament, 
+                                      trust_police,trust_courts)
+
+canada <- canada_ %>% dplyr::select(cntry,year,
+                                   educ,income,sex,age,work,
+                                   demtoday,trust_gov, trust_parliament, 
+                                   trust_police,trust_courts)
+
+
+americas <- rbind(americas,bolivia,canada)
+
+americas
+```
+
+# Asian Barometer
+
+```{r}
+load(asian_raw_url)
+
+delete_na_asian <- function(x) {
+  x<-Recode(x,
+            "-2 = NA;
+            7 = NA;
+            8 = NA;
+            9 = NA;
+            97 = NA;
+            98 = NA;
+            99 = NA;
+            -1 = NA")
+  
+  return(x)
+} #Funktion um die NAs im asian Datensatz zu bestimmen
+
+asian_3 <- asian_raw %>%
+  rename(educ = se5,
+         trust_gov = q9,
+         trust_parliament = q11,
+         trust_police = q14,
+         trust_courts = q8,
+         sex = se2,
+         income = se13a,
+         work = se9) %>%
+  mutate_at(vars(income, trust_gov, trust_parliament, 
+                 trust_police, trust_courts, work, sex), 
+            delete_na_asian) %>%   #NAs deleten 
+  mutate(trust_gov = 5 - trust_gov,
+         trust_parliament = 5 - trust_parliament,
+         trust_police = 5 - trust_police,
+         trust_courts = 5 - trust_courts,
+         sex = sex - 1,   #sex (0/1) codieren
+         income = Recode(income,
+                         "0 = NA"),
+         income = 5 - income,
+         work = Recode(work, #work (0/1) codieren
+                       "2 = 0"),
+         age = Recode(se3a, #missing values l?schen
+                      "-1 = NA"),
+         demtoday = Recode(q91,
+                           "-1 = NA;
+                           97 = NA;
+                           98 = NA;
+                           99 = NA"),
+         educ = Recode(educ,
+                       "-1 = NA;
+                           98 = NA;
+                           99 = NA"),
+         cntry = to_label(country),
+         year = as.numeric(format(ir9,'%Y'))) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+#  mutate_at(vars(income, demtoday, educ, age,
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.character) %>%
+#  mutate_at(vars(income, demtoday, educ, age,
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+
+asian_3
+
+```
+
+## Wave 4
+
+```{r}
+load(myanmar_raw_url)
+
+needed <- function (data) {
+  ss <- data %>%
+    rename(educ = se5,
+           trust_gov = q9,
+           trust_parliament = q11,
+           trust_police = q14,
+           trust_courts = q8,
+           sex = se2,
+           income = se13a,
+           work = se9) %>%
+    mutate_at(vars(income, trust_gov, trust_parliament, 
+                   trust_police, trust_courts, work, sex), 
+              delete_na_asian) %>%   #NAs deleten 
+    mutate(trust_gov = 5 - trust_gov,
+           trust_parliament = 5 - trust_parliament,
+           trust_police = 5 - trust_police,
+           trust_courts = 5 - trust_courts,
+           sex = sex - 1,   #sex (0/1) codieren
+           income = Recode(income,
+                           "0 = NA"),
+           work = Recode(work, #work (0/1) codieren
+                         "2 = 0"),
+           age = Recode(se3_2, #missing values l?schen
+                        "-1 = NA"),
+           demtoday = Recode(q94,
+                             "-1 = NA;
+                           97 = NA;
+                           98 = NA;
+                           99 = NA"),
+           educ = Recode(educ,
+                         "-1 = NA;
+                           98 = NA;
+                           99 = NA"),
+           cntry = to_label(country),
+           year = year) %>%
+    select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+           trust_police, trust_courts) %>%
+#   mutate_at(vars(income, demtoday, educ, age,
+#                  trust_gov, trust_parliament, 
+#                  trust_police, trust_courts), 
+#             as.character) %>%
+#   mutate_at(vars(income, demtoday, educ, age,
+#                  trust_gov, trust_parliament, 
+#                  trust_police, trust_courts), 
+#             as.numeric) %>%
+    mutate_at(vars(income, demtoday, educ, 
+                   trust_gov, trust_parliament, 
+                   trust_police, trust_courts), 
+              range01)
+  return(ss)
+}
+myanmar <- needed(myanmar_raw)
+
+load(mongolia_raw_url)
+load(philip_raw_url)
+load(taiwan_raw_url)
+load(thai_raw_url)
+load(malay_raw_url)
+load(singapore_raw_url)
+load(sk_raw_url)
+load(cambodia_raw_url)
+
+mongolia <- needed(mongolia_raw)
+philip <- needed(philip_raw)
+taiwan <- needed(taiwan_raw)
+thai <- needed(thai_raw)
+malay <- needed(malay_raw)
+singapore <- needed(singapore_raw) #Singapore hat extrem viele Missing values
+sk <- needed(sk_raw)
+cambodia <- needed(cambodia_raw)
+
+asian<- rbind(asian_3,myanmar,cambodia,sk,singapore,malay,thai,taiwan,philip,
+               cambodia,mongolia) %>% as.tbl()
+
+asian
+
+```
+
+
+# European Social Survey
+
+```{r}
+load(ESS_raw_url)
+
+ESS <-ESS_raw %>% 
+  rename(demtoday = dmcntov,
+         age = agea,
+         year = inwyys,
+         trust_gov = trstplt,
+         trust_parliament = trstprl,
+         trust_police = trstplc,
+         trust_courts = trstlgl) %>%
+  mutate(income = 5 - hincfel,
+         educ = Recode(eisced,
+                          "55 = NA"),
+         work = ifelse(mnactic == 1, 1, 0),
+         sex = gndr - 1, #sex variable erstellen
+         cntry = to_label(cntry)) %>%
+  select(cntry,year,age,sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+         trust_police, trust_courts) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.character) %>%
+#  mutate_at(vars(income, demtoday, educ, 
+#                 trust_gov, trust_parliament, 
+#                 trust_police, trust_courts), 
+#            as.numeric) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            stdz) %>%
+  mutate_at(vars(income, demtoday, educ, 
+                 trust_gov, trust_parliament, 
+                 trust_police, trust_courts), 
+            range01)
+
+
+ESS
+```
+
+
+# Merging Everything
+
+```{r}
+ESS$survey <- rep("ESS",nrow(ESS))
+asian$survey <- rep("asian",nrow(asian))
+americas$survey <- rep("americas",nrow(americas))
+wvs$survey <- rep("wvs",nrow(wvs))
+latino$survey <- rep("latino",nrow(latino))
+afro$survey <- rep("afro",nrow(afro))
+
+
+americas$cntry <- as.character(americas$cntry)
+americas$cntry[americas$cntry=="Hait?"] <- "Haiti"
+
+
+americas$cntry<-countrycode(americas$cntry,"country.name.en","country.name.en")
+wvs$cntry<-countrycode(wvs$cntry,"country.name.en","country.name.en")
+latino$cntry<-countrycode(latino$cntry,"country.name.en","country.name.en")
+afro$cntry<-countrycode(afro$cntry,"country.name.en","country.name.en")
+asian$cntry<-countrycode(asian$cntry,"country.name.en","country.name.en")
+ESS$cntry<-countrycode(ESS$cntry,"country.name.en","country.name.en")
+
+unique(ESS$cntry)
+unique(asian$cntry)
+unique(wvs$cntry)
+unique(latino$cntry)
+unique(americas$cntry)
+unique(afro$cntry)
+
+wvs <- wvs %>% dplyr::select(cntry,year,age,sex, income, 
+                             educ, work, demtoday, 
+                             trust_gov, trust_parliament,
+                             trust_police, trust_courts,survey)
+
+latino <- latino %>% dplyr::select(cntry,year,age,sex, income, 
+                                   educ, work, demtoday, 
+                                   trust_gov, trust_parliament,
+                                   trust_police, trust_courts,survey)
+
+
+afro <- afro %>% dplyr::select(cntry,year,age,sex, income, 
+                               educ, work, demtoday, 
+                               trust_gov, trust_parliament,
+                               trust_police, trust_courts,survey)
+
+
+americas <- americas %>% dplyr::select(cntry,year,age,sex, income, 
+                                       educ, work, demtoday, 
+                                       trust_gov, trust_parliament,
+                                       trust_police, trust_courts,survey)
+
+asian <- asian %>% dplyr::select(cntry,year,age,sex, income, 
+                                 educ, work, demtoday, 
+                                 trust_gov, trust_parliament,
+                                 trust_police, trust_courts,survey)
+
+ESS <- ESS %>% dplyr::select(cntry,year,age,sex, income, 
+                             educ, work, demtoday, 
+                             trust_gov, trust_parliament,
+                             trust_police, trust_courts,survey)
+
+
+merged <- rbind(wvs,latino,afro,americas,asian,ESS)
+
+merged <- merged %>%
+  #create dummies
+  mutate(wvs     = ifelse(survey=="wvs",1, 0),
+        afro     = ifelse(survey=="afro",1, 0),
+        latino   = ifelse(survey=="latino",1, 0),
+        americas = ifelse(survey=="americas",1, 0),
+        asian    = ifelse(survey=="asian",1, 0),
+        ESS      = ifelse(survey=="ESS",1, 0)
+        ) %>%
+  #filter bad countries
+  filter(cntry!="Egypt") %>% #exclude Egypt 2013
+  filter(cntry!="Libya") %>% #exclude Libya 2014
+  filter(cntry!="Mali") %>% #exclude Mali 2012
+  filter(cntry!="Yemen") %>% #exclude Yemen 2012
+  filter(cntry!="Palestine, State of") #exclude Palestine 2013
+
+    # adding weight
+merged <- merged %>%
+  group_by(cntry) %>%
+  tally() %>%
+  mutate(weight = 1000/n) %>%
+  select(cntry, weight) %>%
+  left_join(merged, "cntry")
+# select(cntry, year) %>%
+# unique %>%
+# View
+
+merged
+
+table(merged$wvs)
+table(merged$afro)
+table(merged$latino)
+table(merged$americas)
+table(merged$asian)
+table(merged$ESS)
+```
+
+
+
+## SEM Index
+
+```{r}
+merged2 <- merged %>%
+  mutate(gov_trust = trust_gov + trust_parliament + 
+           trust_police + trust_courts) %>%
+  filter(!is.na(gov_trust))
+
+merged3 <- merged %>%
+  mutate(gov_trust = trust_gov + trust_parliament + 
+           trust_police + trust_courts) %>%
+  filter(is.na(gov_trust))
+
+svy.df <- survey::svydesign(id= ~1,
+                              weights= ~weight,
+                              data= merged) 
+
+model <- '# measurement model 1
+gov_trust2 =~ 1*trust_gov + trust_parliament + 
+trust_police + trust_courts
+trust_gov ~~ trust_parliament
+'
+
+merged <- merged %>%
+  mutate_at(vars(trust_gov, trust_parliament,
+                 trust_police, trust_courts), as.numeric)
+
+# cor(na.omit(data.frame(merged$trust_gov,
+#               merged$trust_police,
+#               merged$trust_courts,
+#               merged$trust_parliament,
+#               merged$demtoday)))
+
+lavaan_model1<-cfa(model, meanstructure = T, 
+                   data = as.data.frame(merged),
+                   estimator= "MLM")
+
+fit_a1<-lavaan.survey(lavaan_model1, 
+            estimator= "MLM", survey.design=svy.df)
+summary(fit_a1, standardized=TRUE,fit.measures = TRUE, rsq = T)
+
+merged4<-cbind(merged2, predict(fit_a1, newdata = merged2))
+merged4$gov_trust2<-range01(merged4$gov_trust2)
+
+# head(merged4)
+
+merged<-plyr::rbind.fill(merged3,merged4)
+merged$gov_trust<-merged$gov_trust2
+head(merged)
+```
+
+
+## Some Recoding
+
+```{r}
+table(merged$cntry,merged$year)
+
+table(subset(merged,merged$cntry=="China")$survey,
+      subset(merged,merged$cntry=="China")$year)
+
+merged$year[merged$cntry=="China" & merged$year == 1583] <- 2011
+merged$year[merged$cntry=="China" & merged$year == 2000] <- 2011
+merged$year[merged$cntry=="China" & merged$year == 2077] <- 2011
+merged$year[merged$cntry=="China" & merged$year == 2012] <- 2011
+
+table(subset(merged,merged$cntry=="Singapore")$survey,
+      subset(merged,merged$cntry=="Singapore")$year)
+
+merged$year[merged$cntry=="Singapore" & merged$year == 1582] <- 2011
+
+hist(merged$gov_trust)
+```
+
+
+
+
+# Level 2 Data
+
+## V-Dem
+
+```{r}
+load(vdems_start_url)
+
+vdems_sub <- vdems_start %>% filter(year %in% 2000:2010)
+
+#tibble(id = 1:1896)
+#table(vdems_sub$country_name)
+
+vdem <- vdems_start %>%
+  filter(year %in% 2000:2010) %>% 
+  group_by(country_name) %>%
+  tally %>%
+  mutate(cntry = unique(country_name)) %>%
+  #DCI Variables
+  mutate(delib10 = vdems_sub %>%
+           dcast(country_name ~ year, 
+                 value.var=c("v2xdl_delib")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(consult10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2dlconslt")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(reason10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2dlreason")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(common10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2dlcommon")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(countr10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2dlcountr")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(engage10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2dlengage")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(delibdem10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_delibdem")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  # Control Variables
+  mutate(polity10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_fh_ipolity2")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(gdp10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_GDP_Per_Cap_Haber_Men_2")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(riw10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_v2x_regime_ci")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(corecivil10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2xcs_ccsi")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(pop10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_mipopula")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(corruption10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_corr")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(polkill10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_clphy")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(educ10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_peaveduc")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+  mutate(gini10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_peginiwi")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  # Dummy variables
+  mutate(pol_round = round(polity10 * 2 -10)) %>% 
+  mutate(polity_demdummy = ifelse(pol_round > 5, 1, 0)) %>% 
+  mutate(polity_anodummy = ifelse(pol_round >= -5 & pol_round <= 5, 1, 0)) %>% 
+  mutate(polity_autodummy = ifelse(pol_round < -5, 1, 0)) %>% 
+  mutate(regime = case_when(
+    polity_autodummy == 1 ~ "auto",
+    polity_anodummy == 1 ~ "ano",
+    polity_demdummy == 1 ~ "demo"
+    )
+  ) %>%
+  mutate(regime = factor(regime, levels = c("demo", "ano", "auto"))) %>% 
+  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en"))
+
+vdem$cntry[40] <- "Viet Nam"
+
+
+# ifelse(round(vdem$polity10 * 2 -10) >= -5 & round(vdem$polity10 * 2 -10) <= 5, 1, 0)
+
+table(vdem$regime)
+print(levels(vdem$regime)) 
+
+
+
+  
+```
+
+### To Do
+
+```{r}
+  mutate(regions = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_regionpol")) %>%
+           select('2000') %>% 
+           mutate(regions = fct_recode(as.factor(`2000`),
+                                "E. Europe and C. Asia (post-Communist)" = "1",
+                                "Latin America & Carribean" = "2",
+                                "MENA" = "3",
+                                "Sub-Saharan Africa" = "4",
+                                "W. Europe and N. America" = "5",
+                                "South & East Asia & Pacific" = "6",
+                                "South & East Asia & Pacific" = "7",
+                                "South & East Asia & Pacific" = "8",
+                                "South & East Asia & Pacific" = "9",
+                                "Latin America & Carribean" = "10")  %>%
+                                as_factor))  %>%
+           select(regions)
+
+
+table(regions)
+
+regions2 <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+        value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  transmute(fct_recode(as.factor(`2000`),
+                       "E. Europe and C. Asia (post-Communist)" = "1",
+                       "Latin America & Carribean" = "2",
+                       "MENA" = "3",
+                       "Sub-Saharan Africa" = "4",
+                       "W. Europe and N. America" = "5",
+                       "East Asia" = "6",
+                       "South-East Asia" = "7",
+                       "South Asia" = "8",
+                       "Pacific" = "9",
+                       "Latin America & Carribean" = "10"))
+
+table(regions2)
+
+regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
+
+postcom   <- as.numeric(regions3 == 1)
+latin     <- as.numeric(regions3 == 2 | regions3 == 10)
+mena      <- as.numeric(regions3 == 3)
+subsahara <- as.numeric(regions3 == 4)
+west      <- as.numeric(regions3 == 5)
+e.asia    <- as.numeric(regions3 == 6)
+s.e.asia  <- as.numeric(regions3 == 7)
+s.asia    <- as.numeric(regions3 == 8)
+pacific   <- as.numeric(regions3 == 9)
+
+
+ww <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+                 value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  mutate(regions = fct_recode(as.factor(`2000`),
+                                "E. Europe and C. Asia (post-Communist)" = "1",
+                                "Latin America & Carribean" = "2",
+                                "MENA" = "3",
+                                "Sub-Saharan Africa" = "4",
+                                "W. Europe and N. America" = "5",
+                                "South & East Asia & Pacific" = "6",
+                                "South & East Asia & Pacific" = "7",
+                                "South & East Asia & Pacific" = "8",
+                                "South & East Asia & Pacific" = "9",
+                                "Latin America & Carribean" = "10")) %>%
+                                 as_factor() %>%
+                                 select(regions)
+
+ww
+
+regions2 <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+        value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  transmute(fct_recode(as.factor(`2000`),
+                       "E. Europe and C. Asia (post-Communist)" = "1",
+                       "Latin America & Carribean" = "2",
+                       "MENA" = "3",
+                       "Sub-Saharan Africa" = "4",
+                       "W. Europe and N. America" = "5",
+                       "East Asia" = "6",
+                       "South-East Asia" = "7",
+                       "South Asia" = "8",
+                       "Pacific" = "9",
+                       "Latin America & Carribean" = "10"))
+
+table(regions2)
+
+regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
+
+postcom   <- as.numeric(regions3 == 1)
+latin     <- as.numeric(regions3 == 2 | regions3 == 10)
+mena      <- as.numeric(regions3 == 3)
+subsahara <- as.numeric(regions3 == 4)
+west      <- as.numeric(regions3 == 5)
+e.asia    <- as.numeric(regions3 == 6)
+s.e.asia  <- as.numeric(regions3 == 7)
+s.asia    <- as.numeric(regions3 == 8)
+pacific   <- as.numeric(regions3 == 9)
+
+
+
+```
+
+
+## QoG
+
+```{r}
+load(qog_url)
+
+qog10 <- qog %>% 
+  filter(year %in% 2000:2010) %>% 
+  mutate(cntry = countrycode(ccodecow, "cown","country.name.en"))
+
+qog10 <- qog %>% 
+  filter(year %in% 2000:2010) %>% 
+  mutate(cntry = countrycode(ccodecow, "cown","country.name.en")) %>% 
+  group_by(cntry) %>%
+  tally() %>% 
+  mutate(ethnic10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var=c("al_ethnic"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  select(-n)
+#  mutate(al_ethnic = as.numeric(al_ethnic)) %>% 
+
+qog10
+
+
+
+```
+
+## Merging Time
+
+### Level 2
+
+```{r}
+level2 <- merge(x=qog10, y=vdem, by="cntry")
+
+level2
+```
+
+### Ind + Country
+
+```{r}
+
+combined <- merge(x=merged, y=level2, by="cntry") %>% 
+              mutate(cntryears = paste(cntry, year))
+
+#combined$cntryears <- paste(combined$cntry,combined$year)
+
+
+vdem2 <- vdems_start %>%
+  filter(year %in% 2010:2015) %>% 
+  mutate(cntry = countrycode(country_name,"country.name.en","country.name.en")) #%>% 
+ # select(cntry, country_name)
+
+vdem2$cntry[996] <- "Viet Nam"
+vdem2$cntry[997] <- "Viet Nam"
+vdem2$cntry[998] <- "Viet Nam"
+vdem2$cntry[999] <- "Viet Nam"
+vdem2$cntry[1000] <- "Viet Nam"
+vdem2$cntry[1001] <- "Viet Nam"
+
+combined <- vdem2 %>% 
+  mutate(cntryears = paste(cntry, year)) %>% 
+  mutate(discuss_unsel = v2xcl_disc) %>% 
+  select(cntryears, discuss_unsel) %>% 
+  merge(combined, by = "cntryears") %>% 
+                  plyr::ddply(~cntry,
+                        summarise, 
+                        discuss = mean(discuss_unsel, na.rm=T)) %>% 
+  merge(combined, by = "cntry")
+
+
+combined
+
+
+save(combined,file="combined.Rdata")
+save(level2,file="level2.Rdata")
+```
+
+
+##### To Do
+
+```{r}
+
+
+
+table_stuff  <- combined %>% dplyr::select(cntry, gov_trust,
+                                           demtoday,delib10,polity10, discuss)
+table_stuff$gov_trust <- range01(table_stuff$gov_trust)*100
+table_stuff$demtoday <- range01(table_stuff$demtoday)*100
+
+table_stuff <- ddply(table_stuff,~cntry,
+                     summarise,mean_gov=mean(gov_trust,na.rm=T),
+                     mean_dem=mean(demtoday,na.rm=T))
+
+table_stuff <- merge(table_stuff, aggrdelib, by="cntry")
+table_stuff <- merge(table_stuff, physi2, by="cntry")
+table_stuff <- merge(table_stuff, physi22000, by="cntry")
+table_stuff <- merge(table_stuff, physi_22, by="cntry")
+table_stuff <- merge(table_stuff, physigni2, by="cntry")
+#table_stuff <- merge(table_stuff, physiff2, by="cntry")
+
+
+table_stuff$mean_gov8[table_stuff$discuss2==2] <- table_stuff$mean_gov8[table_stuff$discuss2==2] *.9
+table_stuff$mean_gov8[table_stuff$discuss2==1] <- table_stuff$mean_gov8[table_stuff$discuss2==1] *.85
+
+table_stuff$mean_gov8[table_stuff$mean_gov8>100] <- NA
+table(table_stuff$mean_gov8)
+
+table_stuff$mean_gov9[table_stuff$discuss2==2] <- table_stuff$mean_gov9[table_stuff$discuss2==2] *.8
+table_stuff$mean_gov9[table_stuff$discuss2==1] <- table_stuff$mean_gov9[table_stuff$discuss2==1] *.75
+
+table_stuff$mean_gov9[table_stuff$mean_gov9>100] <- NA
+table(table_stuff$mean_gov9)
+
+cmpr <- table_stuff %>% filter(discuss2 < 2) %>% 
+  dplyr::select(cntry,mean_gov6,mean_gov7,mean_gov8,mean_gov9)
+
+
+table_stuff2<-subset(table_stuff,
+                     !is.na(table_stuff$regime) &
+                       table_stuff$cntry!="Qatar" &
+                       table_stuff$cntry!="Uzbekistan")
+
+table_stuff_dem <- subset(table_stuff, table_stuff$polity_demdummy == 1)
+table_stuff_aut <- subset(table_stuff, table_stuff$polity_demdummy == 0)
+
+table_stuff_dem2 <- subset(table_stuff2, table_stuff2$polity_demdummy == 1)
+table_stuff_aut2 <- subset(table_stuff2, table_stuff2$polity_demdummy == 0)
+
+
+table_stuff$regime <- factor(table_stuff$regime, labels = c("Autocracies","Anocracies","Democracies"))
+table_stuff2$regime <- factor(table_stuff$regime, labels = c("Autocracies","Anocracies","Democracies"))
+
+table_stuff$common10 <- range01(table_stuff$common10)
+table_stuff2$common10 <- range01(table_stuff2$common10)
+
+table_stuff$reason10 <- range01(table_stuff$reason10)
+table_stuff2$reason10 <- range01(table_stuff2$reason10)
+
+table_stuff$consult10 <- range01(table_stuff$consult10)
+table_stuff2$consult10 <- range01(table_stuff2$consult10)
+
+table_stuff$countr10 <- range01(table_stuff$countr10)
+table_stuff2$countr10 <- range01(table_stuff2$countr10)
+
+table_stuff$engage10 <- range01(table_stuff$engage10)
+table_stuff2$engage10 <- range01(table_stuff2$engage10)
+
+table_stuff$delib10 <- range01(table_stuff$delib10)
+table_stuff2$delib10 <- range01(table_stuff2$delib10)
+
+save(table_stuff,file="table_stuff.Rdata")
+
+table(table_stuff2$regime)
+
+tail(vdems_sub2$cntry,50)
+
+head(combined$latin)
+
+unique(merged$cntry)
+
+
+
+combined$discuss2 <- round(combined$discuss*4)
+combined$discuss2[is.nan(combined$discuss2)] <- 999
+table(combined$discuss2)
+
+combined$gov_trust8 <- combined$gov_trust
+combined$gov_trust8[is.na(combined$gov_trust8)]<-999
+
+combined$gov_trust9 <- combined$gov_trust
+combined$gov_trust9[is.na(combined$gov_trust9)]<-999
+#table(combined$discuss2==2)
+combined$gov_trust8[combined$discuss2==2] <- combined$gov_trust8[combined$discuss2==2] *.9
+combined$gov_trust8[combined$discuss2==1] <- combined$gov_trust8[combined$discuss2==1] *.85
+
+combined$gov_trust8[combined$gov_trust8>100] <- NA
+table(combined$gov_trust8)
+
+combined$gov_trust9[combined$discuss2==2] <- combined$gov_trust9[combined$discuss2==2] *.8
+combined$gov_trust9[combined$discuss2==1] <- combined$gov_trust9[combined$discuss2==1] *.75
+
+combined$gov_trust9[combined$gov_trust9>100] <- NA
+table(combined$gov_trust9)
+
+mean(combined$gov_trust, na.rm = T)
+mean(combined$gov_trust8, na.rm = T)
+mean(combined$gov_trust9, na.rm = T)
+
+
+
+
+
+
+```
+
+
+
+# Crap
+
+```{r}
+
+
+
+compare_cntry<-data.frame(table(merged$cntry,merged$year))
+compare_cntry<-tidyr::spread(compare_cntry,Var2,Freq)
+compare_cntry[compare_cntry==0]<-100000
+#compare_cntry<-na.omit(compare_cntry)
+indie<-as.numeric(apply(compare_cntry[,-1],1,sum))
+compare_cntry$double<-indie<900000
+compare_cntry[compare_cntry==100000]<-0
+compare_cntry2 <- subset(compare_cntry,compare_cntry$double==TRUE)
+
+compare_cntry3 <- subset(merged,merged$cntry %in% compare_cntry2$Var1)
+
+y1<-subset(compare_cntry3,compare_cntry3$cntry=="Belize" &
+                      compare_cntry3$year==2012)$gov_trust
+
+y2<-subset(compare_cntry3,compare_cntry3$cntry=="Belize" &
+         compare_cntry3$year==2014)$gov_trust
+
+t.test(y1,y2)
+
+y1<-subset(compare_cntry3,compare_cntry3$cntry=="Bolivia (Plurinational State of)" &
+             compare_cntry3$year==2012)$gov_trust
+
+y2<-subset(compare_cntry3,compare_cntry3$cntry=="Bolivia (Plurinational State of)" &
+             compare_cntry3$year==2013)$gov_trust
+
+t.test(y1,y2)
+
+y1<-subset(compare_cntry3,compare_cntry3$cntry=="South Africa" &
+             compare_cntry3$year==2011)$gov_trust
+
+y2<-subset(compare_cntry3,compare_cntry3$cntry=="South Africa" &
+             compare_cntry3$year==2013)$gov_trust
+
+t.test(y1,y2)
+
+       
+subset(merged,merged$year==2012)
+
+library(dplyr)
+compare_cntry4 <- compare_cntry3 %>%
+  group_by(cntry,year) %>%
+  summarise_all(funs(mean(., na.rm=TRUE)))
+
+compare_cntry4$cntryear<-paste(compare_cntry4$cntry,compare_cntry4$year)
+  
+as.data.frame(compare_cntry4[,c(17,8)])
+  
+?ddply
+head(afro)
+
+afrocntry<-unique(afro$cntry)
+latinocntry<-unique(latino2013$cntry)
+arabcntry<-unique(arab3$cntry)
+wvscntry<-unique(wvs$cntry)
+
+cntry_table<- data.frame(as.character(wvscntry),
+                         c(as.character(arabcntry),rep("-",48)),
+                         c(as.character(latinocntry),rep("-",41)),
+                         c(as.character(afrocntry),rep("-",24)))
+
+colnames(cntry_table) <- c("wvs","arab","latino","afro")
+
+arrange(cntry_table, wvs, afro)
+
+
+
+table(combined$politcat.x)
+mplusdata <- combined %>% dplyr::select(cntry, delib10, demtoday, 
+                                        trust_gov, trust_parliament, 
+                                        trust_police,trust_courts,weight)
+mplusdata <- na.omit(mplusdata)
+mplusdata$cntry <- as.numeric(mplusdata$cntry)
+write_csv(mplusdata, path = "mplusdata.csv", col_names = F)
+
+mplusdata2 <- combined %>% dplyr::select(cntry, delib10, demtoday, 
+                                        gov_trust,weight)
+mplusdata2 <- na.omit(mplusdata2)
+mplusdata2$cntry <- as.numeric(mplusdata2$cntry)
+write_csv(mplusdata2, path = "mplusdat2a.csv", col_names = F)
+
+mplusdata2_dem <- combined_dem %>% dplyr::select(cntry, delib10, demtoday, 
+                                         gov_trust,weight)
+mplusdata2_dem <- na.omit(mplusdata2_dem)
+mplusdata2_dem$cntry <- as.numeric(mplusdata2_dem$cntry)
+write_csv(mplusdata2_dem, path = "mplusdat2_dema.csv", col_names = F)
+
+mplusdata2_aut <- combined_aut %>% dplyr::select(cntry, delib10, demtoday, 
+                                         gov_trust,weight)
+mplusdata2_aut <- na.omit(mplusdata2_aut)
+mplusdata2_aut$cntry <- as.numeric(mplusdata2_aut$cntry)
+write_csv(mplusdata2_aut, path = "mplusdat2_auta.csv", col_names = F)
+
+combined <- merge(combined, physi2_s, by = "cntry")
+
+combined_dem <- subset(combined,combined$polity_demdummy==1)
+
+mplusdata_dem <- combined_dem %>% dplyr::select(cntry, delib10, demtoday, 
+                                        trust_gov, trust_parliament, 
+                                        trust_police,trust_courts,weight)
+mplusdata_dem <- na.omit(mplusdata_dem)
+mplusdata_dem$cntry <- as.numeric(mplusdata_dem$cntry)
+write_csv(mplusdata_dem, path = "mplusdata_dem.csv", col_names = F)
+
+
+combined_aut <- subset(combined,combined$polity_demdummy==0)
+
+mplusdata_aut <- combined_aut %>% dplyr::select(cntry, delib10, demtoday, 
+                                                trust_gov, trust_parliament, 
+                                                trust_police,trust_courts,weight)
+mplusdata_aut <- na.omit(mplusdata_aut)
+mplusdata_aut$cntry <- as.numeric(mplusdata_aut$cntry)
+write_csv(mplusdata_aut, path = "mplusdata_aut.csv", col_names = F)
+
+
+#data_wids <- dcast(merged, cntry~year, 
+#                    value.var=c("year"))
+#data_wids2 <- as.data.frame(lapply(data_wids[,-1],function(n) 0<n))
+#data_wids3 <- as.data.frame(apply(data_wids2,2,as.numeric))
+#data_wids3 <- cbind(data_wids[,1],data_wids3)
+#names(data_wids3)[1]<-"cntry"
+#table_stuff <- merge(data_wids3 ,table_stuff, by="cntry")
+
+#table_stuff$polity10[table_stuff$cntry=="Tunisia"] <- 5.32382
+#table_stuff2$polity10[table_stuff2$cntry=="Tunisia"] <- 5.32382
+
+head(table_stuff)
+cor(na.omit(data.frame(table_stuff$legit,table_stuff$legit2,table_stuff$legit3,
+                       table_stuff$mean_gov)))
+
+table_stuff$gni <- table_stuff$gni_c
+
+table_stuff$gni_c[table_stuff$gni <= 1025] <- "low"
+table_stuff$gni_c[table_stuff$gni > 1026 & table_stuff$gni <= 4035] <- "lower-middle"
+table_stuff$gni_c[table_stuff$gni > 4036 & table_stuff$gni <= 12475] <- "upper-middle"
+table_stuff$gni_c[table_stuff$gni > 12475] <- "high"
+
+table_stuff$gni_c2 <- table_stuff$gni_c
+
+table_stuff$gni_c2[table_stuff$gni_c == "lower-middle"] <- "low"
+table_stuff$gni_c2[table_stuff$gni_c == "upper-middle"] <- "high"
+
+table(table_stuff$gni_c)
+table(table_stuff$gni_c2)
+
+The cut-off points are HDI of less than 0.550
+for low human development, 0.550-0.699 for medium human
+development, 0.700-0.799 for high human development and
+0.800 or greater for very high human development.
+
+#table_stuff$hdi_c <- table_stuff$hdi
+
+#table_stuff$hdi_c[table_stuff$hdi < 0.550] <- "low"
+#table_stuff$hdi_c[table_stuff$hdi >= 0.550 & table_stuff$hdi <= 0.699] <- "medium"
+#table_stuff$hdi_c[table_stuff$hdi >= 0.700 & table_stuff$hdi <= 0.899] <- "high"
+#table_stuff$hdi_c[table_stuff$hdi >= 0.90] <- "very high"
+
+#table(table_stuff$hdi_c)
+
+
+
+table(round(table_stuff$terror))
+
+table_stuff$mean_gov2 <- table_stuff$mean_gov
+table_stuff$mean_gov2[is.na(table_stuff$mean_gov2)]<-999
+
+table_stuff$mean_gov3 <- table_stuff$mean_gov
+table_stuff$mean_gov3[is.na(table_stuff$mean_gov3)]<-999
+
+table_stuff$mean_gov4 <- table_stuff$mean_gov
+table_stuff$mean_gov4[is.na(table_stuff$mean_gov4)]<-999
+
+table_stuff$mean_gov5 <- table_stuff$mean_gov
+table_stuff$mean_gov5[is.na(table_stuff$mean_gov5)]<-999
+
+table_stuff$mean_gov6 <- table_stuff$mean_gov
+table_stuff$mean_gov6[is.na(table_stuff$mean_gov6)]<-999
+
+table_stuff$mean_gov7 <- table_stuff$mean_gov
+table_stuff$mean_gov7[is.na(table_stuff$mean_gov7)]<-999
+
+table_stuff$mean_gov8 <- table_stuff$mean_gov
+table_stuff$mean_gov8[is.na(table_stuff$mean_gov8)]<-999
+
+table_stuff$mean_gov9 <- table_stuff$mean_gov
+table_stuff$mean_gov9[is.na(table_stuff$mean_gov9)]<-999
+
+table_stuff$physviol2 <- table_stuff$physviol
+table_stuff$physviol2[is.na(table_stuff$physviol2)] <- 999
+
+table_stuff$terror2 <- round(table_stuff$terror)
+table_stuff$terror2[is.nan(table_stuff$terror2)] <- 999
+
+table_stuff$discuss2 <- round(table_stuff$discuss*4)
+table_stuff$discuss2[is.nan(table_stuff$discuss2)] <- 999
+
+
+
+table(table_stuff$physviol)
+table_stuff$mean_gov2[table_stuff$physviol2<=0.5 & table_stuff$physviol2>0.4] <- table_stuff$mean_gov2[table_stuff$physviol2<=0.5 & table_stuff$physviol2>0.4]-5
+table_stuff$mean_gov2[table_stuff$physviol2<=0.4 & table_stuff$physviol2>0.3] <- table_stuff$mean_gov2[table_stuff$physviol2<=0.4 & table_stuff$physviol2>0.3]-10
+table_stuff$mean_gov2[table_stuff$physviol2<=0.3 & table_stuff$physviol2>0.2] <- table_stuff$mean_gov2[table_stuff$physviol2<=0.3 & table_stuff$physviol2>0.2]-15
+table_stuff$mean_gov2[table_stuff$physviol2<=0.2 & table_stuff$physviol2>0.1] <- table_stuff$mean_gov2[table_stuff$physviol2<=0.2 & table_stuff$physviol2>0.1]-20
+table_stuff$mean_gov2[table_stuff$physviol2<=0.1 & table_stuff$physviol2>=0]  <- table_stuff$mean_gov2[table_stuff$physviol2<=0.1 & table_stuff$physviol2>=0]  -25
+
+table_stuff$mean_gov2[table_stuff$mean_gov2>100] <- NA
+table(table_stuff$mean_gov2)
+
+table_stuff$mean_gov3[table_stuff$physviol2<=0.5 & table_stuff$physviol2>0.4] <- table_stuff$mean_gov3[table_stuff$physviol2<=0.5 & table_stuff$physviol2>0.4]-8
+table_stuff$mean_gov3[table_stuff$physviol2<=0.4 & table_stuff$physviol2>0.3] <- table_stuff$mean_gov3[table_stuff$physviol2<=0.4 & table_stuff$physviol2>0.3]-16
+table_stuff$mean_gov3[table_stuff$physviol2<=0.3 & table_stuff$physviol2>0.2] <- table_stuff$mean_gov3[table_stuff$physviol2<=0.3 & table_stuff$physviol2>0.2]-24
+table_stuff$mean_gov3[table_stuff$physviol2<=0.2 & table_stuff$physviol2>0.1] <- table_stuff$mean_gov3[table_stuff$physviol2<=0.2 & table_stuff$physviol2>0.1] -32
+table_stuff$mean_gov3[table_stuff$physviol2<=0.1 & table_stuff$physviol2>=0] <-  table_stuff$mean_gov3[table_stuff$physviol2<=0.1 & table_stuff$physviol2>=0]  -30
+
+table_stuff$mean_gov3[table_stuff$mean_gov3>100] <- NA
+table(table_stuff$mean_gov3)
+
+table_stuff$mean_gov4[table_stuff$terror2==5] <- table_stuff$mean_gov4[table_stuff$terror2==5]-5
+table_stuff$mean_gov4[table_stuff$terror2==4] <- table_stuff$mean_gov4[table_stuff$terror2==4]-10
+table_stuff$mean_gov4[table_stuff$terror2==3] <- table_stuff$mean_gov4[table_stuff$terror2==3]-15
+
+table_stuff$mean_gov4[table_stuff$mean_gov4>100] <- NA
+table(table_stuff$mean_gov4)
+
+table_stuff$mean_gov5[table_stuff$terror2==5] <- table_stuff$mean_gov5[table_stuff$terror2==5]-8
+table_stuff$mean_gov5[table_stuff$terror2==4] <- table_stuff$mean_gov5[table_stuff$terror2==4]-16
+table_stuff$mean_gov5[table_stuff$terror2==3] <- table_stuff$mean_gov5[table_stuff$terror2==3]-24
+
+table_stuff$mean_gov5[table_stuff$mean_gov5>100] <- NA
+table(table_stuff$mean_gov5)
+
+table_stuff$mean_gov6[table_stuff$discuss2==2] <- table_stuff$mean_gov6[table_stuff$discuss2==2] -5
+table_stuff$mean_gov6[table_stuff$discuss2==1] <- table_stuff$mean_gov6[table_stuff$discuss2==1] -10
+
+table_stuff$mean_gov6[table_stuff$mean_gov6>100] <- NA
+table(table_stuff$mean_gov6)
+
+table_stuff$mean_gov7[table_stuff$discuss2==2] <- table_stuff$mean_gov7[table_stuff$discuss2==2] -10
+table_stuff$mean_gov7[table_stuff$discuss2==1] <- table_stuff$mean_gov7[table_stuff$discuss2==1] -20
+
+table_stuff$mean_gov7[table_stuff$mean_gov7>100] <- NA
+table(table_stuff$mean_gov7)
+
+
+load(qog_url)
+
+qog10 <- subset(qog,qog$year==2000 |
+                  qog$year==2001 |  
+                  qog$year==2002 | 
+                  qog$year==2003 | 
+                  qog$year==2004 | 
+                  qog$year==2005 | 
+                  qog$year==2006 | 
+                  qog$year==2007 | 
+                  qog$year==2008 | 
+                  qog$year==2009 |
+                  qog$year==2010)
+
+library(countrycode)
+qog10$cntry<-countrycode(qog10$ccodecow, "cown","country.name.en")
+qog10$al_ethnic<-as.numeric(qog10$al_ethnic)
+#tidyr::gather(qog10,c("cntry","year"),"al_ethnic")
+
+qog10a <- qog10 %>% dplyr::select(cntry,year,al_ethnic) %>%
+  as.data.frame()
+data_wide17 <- reshape(data = qog10a,
+                       idvar = "cntry",
+                       v.names = "al_ethnic",
+                       timevar = "year",
+                       direction = "wide")
+
+#qog10hdi <- qog10 %>% dplyr::select(cntry,year,undp_hdi) %>%
+#  as.data.frame()
+#data_wide_hdi <- hdi
+  #reshape(data = qog10hdi,
+                      # idvar = "cntry",
+                      # v.names = "undp_hdi",
+                      # timevar = "year",
+                      # direction = "wide")
+
+
+
+table(qog$al_ethnic,qog$year)
+
+qog14 <- subset(qog,qog$year==2014)
+qog14$cntry<-countrycode(qog14$ccodecow, "cown","country.name.en")
+qog14 <- qog14 %>% dplyr::select(cntry,year,cspf_legit) %>%
+  as.data.frame()
+data_wide18 <- reshape(data = qog14,
+                       idvar = "cntry",
+                       v.names = "cspf_legit",
+                       timevar = "year",
+                       direction = "wide")
+
+qog15 <- subset(qog,qog$year==2015)
+qog15$cntry<-countrycode(qog15$ccodecow, "cown","country.name.en")
+qog15 <- qog15 %>% dplyr::select(cntry,year,ffp_sl) %>%
+  as.data.frame()
+data_wide19 <- reshape(data = qog15,
+                       idvar = "cntry",
+                       v.names = "ffp_sl",
+                       timevar = "year",
+                       direction = "wide")
+
+
+qog10$ciri_physint<-as.numeric(qog10$ciri_physint)
+qog10a <- qog10 %>% dplyr::select(cntry,year,ciri_physint) %>%
+  as.data.frame()
+data_wide20 <- reshape(data = qog10a,
+                       idvar = "cntry",
+                       v.names = "ciri_physint",
+                       timevar = "year",
+                       direction = "wide")
+
+qog10$gd_ptss <-as.numeric(qog10$gd_ptss)
+qog10a <- qog10 %>% dplyr::select(cntry,year,gd_ptss) %>%
+  as.data.frame()
+data_wide21 <- reshape(data = qog10a,
+                       idvar = "cntry",
+                       v.names = "gd_ptss",
+                       timevar = "year",
+                       direction = "wide")
+
+qog14<-subset(qog,qog$year==2014)
+qog13<-subset(qog,qog$year==2013)
+qog12<-subset(qog,qog$year==2012)
+qog11<-subset(qog,qog$year==2011)
+qog10<-subset(qog,qog$year==2010)
+qog8<-subset(qog,qog$year==2008)
+qog7<-subset(qog,qog$year==2007)
+qog6<-subset(qog,qog$year==2006)
+qog5<-subset(qog,qog$year==2005)
+qog4<-subset(qog,qog$year==2004)
+qog3<-subset(qog,qog$year==2003)
+qog2<-subset(qog,qog$year==2002)
+qog1<-subset(qog,qog$year==2001)
+qog0<-subset(qog,qog$year==2000)
+
+
+
+table(is.na(qog$wel_culture),qog$year)
+culreg<- pmax(qog14$wel_culture, qog13$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog12$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog11$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog10$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog8$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog7$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog6$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog5$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog4$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog3$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog2$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog1$wel_culture, na.rm = TRUE)
+culreg<- pmax(culreg, qog0$wel_culture, na.rm = TRUE)
+culreg<- as.character(sjmisc::to_label(culreg))
+culreg<-as.data.frame(cbind(culreg,qog14$ccodecow))
+oreast  <- subset(culreg, culreg$culreg == "Orthodox East")
+oreast
+
+#culreg<- pmax(culreg, qog10$wel_culture, na.rm = TRUE)
+
+qog14$ht_region 
+
+culreg$cntry<-countrycode(culreg$V2, "cown","country.name.en")
+tabeletto<-merge(table_stuff,culreg,by="cntry")
+tabeletto<-as.data.frame(cbind(table_stuff$regions,
+                               as.character(table_stuff$cntry),
+                               as.character(tabeletto$culreg)))
+tabeletto <- tabeletto[order(tabeletto$V1, tabeletto$V3),]
+#edit(tabeletto)
+
+culreg<-data.frame(cbind(tabeletto,culreg))
+culreg<-culreg[,c(2,4)]
+names(culreg)[1]<-c("cntry")
+
+table_stuff3 <- merge(table_stuff,culreg,by="cntry")
+
+table(as.character(tabeletto$V3))
+
+qog100 <- subset(qog,qog$year==2010)
+qog100$cntry<-countrycode(sjmisc::to_label(qog100$ccodecow), "cown","country.name.en")
+qog100 <- qog100 %>% dplyr::select(cntry,year,ht_regtype1) %>%
+  as.data.frame()
+qog100$regtype<-sjmisc::to_label(qog100$ht_regtype1)
+qog100$year <- NULL
+qog100$ht_regtype1 <- NULL
+table(qog100$regtype)
+
+
+ethnic10<-as.numeric(rowMeans(data_wide17[,2:12])) # mean over last 10 years (2000 - 2010)
+physint10<-as.numeric(rowMeans(data_wide20[,2:12])) # mean over last 10 years (2000 - 2010)
+terror10<-as.numeric(rowMeans(data_wide21[,2:12])) # mean over last 10 years (2000 - 2010)
+legit<-as.numeric(data_wide18[,2]) # mean over last 10 years (2000 - 2010)
+legit2<-as.numeric(data_wide19[,2]) # mean over last 10 years (2000 - 2010)
+qogthingy<-data.frame(data_wide19[,1],ethnic10,legit,legit2,physint10,terror10)
+colnames(qogthingy)[1]<-c("cntry")
+qogthingy<-merge(x=qogthingy, y=qog100, by="cntry")
+
+#qogthingy<-data.frame(data_wide17[,1],ethnic10)
+#colnames(qogthingy)[1]<-c("cntry")
+#combined <- merge(x=qogthingy, y=combined, by="cntry")
+
+
+qog_cs <-read_spss("C:/Users/Favone/Downloads/qog_std_cs_jan17.sav") #loading dataset
+qog_cs$cntry<-countrycode(qog_cs$ccodecow, "cown","country.name.en")
+qog_cs$legit3<-as.numeric(qog_cs$gov_ixlegitimacyindex)
+
+legit_dat<-data.frame(qog_cs$cntry,qog_cs$legit3)
+colnames(legit_dat)<-c("cntry","legit3")
+
+aggrdelib <- merge(x=legit_dat, y=aggrdelib, by="cntry")
+
+aggrdelib$legit3 <- range01(aggrdelib$legit3)
+cor(na.omit(aggrdelib[,c(4,5,7,13)]))
+cor(na.omit(aggrdelib[,c(4,5,2,6:13)]))
+
+aggrdelib$legit <- 1-range01(aggrdelib$legit)
+aggrdelib$legit2 <- 1-range01(aggrdelib$legit2)
+aggrdelib$asia <- aggrdelib$e.asia + aggrdelib$s.e.asia + aggrdelib$s.asia + aggrdelib$pacific
+
+SFI <-read_spss("C:/Users/Favone/Downloads/SFIv2016.sav") #loading dataset
+SFI <- subset(SFI,SFI$year==2015)
+SFI$cntry <-countrycode(SFI$country, "country.name.en","country.name.en") 
+SFI$cntry[79] <- "North Korea"
+SFI$cntry <-countrycode(SFI$cntry, "country.name.en","country.name.en") 
+SFI$legitimacy <- SFI$legit
+SFI$legit <- NULL
+
+
+aggrdelib <- merge(x=SFI, y=aggrdelib, by="cntry")
+
+hdi <- read_csv("hdi.csv")
+hdi$cntry<-countrycode(hdi$Country, "country.name.en","country.name.en")
+hdi$'1990'<- NULL ; hdi$'1991'<- NULL ; hdi$'1992'<- NULL ; hdi$'1993'<- NULL
+hdi$'1994'<- NULL; hdi$'1995'<- NULL; hdi$'1996'<- NULL; hdi$'1997'<- NULL
+hdi$'1998'<- NULL ; hdi$'1999'<- NULL ; hdi$'2011'<- NULL ; hdi$'2012'<- NULL
+hdi$'2013'<- NULL; hdi$'2014'<- NULL; hdi$'2015'<- NULL;hdi$`HDI Rank (2015)`<- NULL
+hdi$Country<- NULL
+hdi10<-as.numeric(rowMeans(hdi[,1:11])) 
+hdat<-data.frame(hdi$cntry,hdi10) 
+names(hdat)<-c("cntry","hdi10")
+
+aggrdelib <- merge(x=hdat, y=aggrdelib, by="cntry")
+#table(aggrdelib$hdi10)
+#gc()
+#combined <- merge(x=hdat, y=combined, by="cntry")
+
+
+#colnames(aggrdelib)[9]<-"e_p_polity"
+#lop<-subset(vdems_start,vdems_start$year==2010)
+
+cor(na.omit(aggrdelib2[,2:17]))
+cor(na.omit(data.frame(aggrdelib$polity10,aggrdelib$delib10)))
+
+#hist(vdems$v2dlconslt)
+#hist(vdems$v2xcl_disc)
+#table(vdems_start$e_boix_regime,vdems_start$year)
+#table(vdems_sub$e_p_polity,vdems_sub$year)
+
+##### merging time ####
+
+combined <- merge(x=merged, y=aggrdelib, by="cntry")
+table(combined$cntry)
+
+combined <- as.data.frame(combined)
+combined$gov_trust <- as.numeric(combined$gov_trust)
+combined$age <- as.numeric(combined$age)
+combined$income <- as.numeric(combined$income)
+combined$educ <- as.numeric(combined$educ)
+combined$sex <- as.factor(combined$sex)
+combined$authoritarian <- as.numeric(combined$authoritarian)
+combined$safety <- as.numeric(combined$safety)
+combined$demtoday <- as.numeric(combined$demtoday)
+combined$latino <- factor(combined$latino)
+combined$afro <- factor(combined$afro)
+combined$americas <- factor(combined$americas)
+combined$asia <- combined$e.asia + combined$s.e.asia + combined$s.asia + combined$pacific
+
+cor(na.omit(data.frame(combined$gov_trust,combined$income,combined$educ, #Socioeconomic factors
+                       combined$delib10, combined$polity10, combined$gdp10, combined$demtoday)))
+
+combined$cntry<-as.factor(combined$cntry)
+
+
+#combined$polity10 <- combined$polity10*20-10
+
+#combined$regime <- combined$polity10
+#combined$regime[combined$polity_autodummy==1] <- "auto"
+#combined$regime[combined$polity_anodummy==1] <- "ano"
+#combined$regime[combined$polity_demdummy==1] <- "demo"
+
+hist(combined$gov_trust)
+qplot(combined$gov_trust)
+
+combined$cntry
+
+
+
+#physi_s <- vdems_sub2 %>% dplyr::select(cntryears, franz)
+
+#combined <- merge(combined, physi_s, by = "cntryears")
+
+#physi2_s <- ddply(combined,~cntry,
+#                summarise,politcat=mean(franz,na.rm=T))
+
+#combined <- merge(combined, physi2_s, by = "cntry")
+
+
+vdems_sub2$cntryears <- paste(vdems_sub2$cntry,vdems_sub2$year)
+
+physi <- vdems_sub2 %>% dplyr::select(cntryears, perc)
+
+combined <- merge(combined, physi, by = "cntryears")
+
+physi2 <- ddply(combined,~cntry,
+                     summarise,physviol=mean(perc,na.rm=T))
+
+combined <- merge(combined, physi2, by = "cntry")
+
+
+
+
+
+#physi_22$dis3 <-round(physi_22$dis2)
+
+#unique(physi2_s$cntry)
+
+#1-2.5
+#3-5
+#5.5 - 7
+#physi2_s$politcat2<-8-((physi2_s$politcat) * (7/10))
+#11 
+
+#physi2_s$polity_demdummy <- physi2_s$politcat2
+#physi2_s$polity_demdummy [physi2_s$politcat2 <= 2.5] <- 1
+#physi2_s$polity_demdummy [physi2_s$politcat2 >  2.5] <- 0
+#table(physi2_s$polity_demdummy)
+
+#physi2_s$polity_anodummy <- physi2_s$politcat2
+#physi2_s$polity_anodummy[physi2_s$politcat2 > 2.5 & physi2_s$politcat2 < 5.5] <- 1
+#physi2_s$polity_anodummy[physi2_s$politcat2 <= 2.5 | physi2_s$politcat2 >= 5.5] <- 0
+#table(physi2_s$polity_anodummy)
+
+#physi2_s$polity_autodummy <- physi2_s$politcat2
+#physi2_s$polity_autodummy[physi2_s$politcat2 >= 5.5] <- 1
+#physi2_s$polity_autodummy[physi2_s$politcat2 < 5.5] <- 0
+#table(physi2_s$polity_autodummy)
+
+#physi2_s$regime <- physi2_s$politcat
+#physi2_s$regime[physi2_s$polity_autodummy==1] <- "auto"
+#physi2_s$regime[physi2_s$polity_anodummy==1] <- "ano"
+#physi2_s$regime[physi2_s$polity_demdummy==1] <- "demo"
+
+#unique(physi2_s$cntry)
+
+table(physi2_s$regime)
+
+qog2000 <- subset(qog,qog$year==2010 |
+                       qog$year==2011 |  
+                       qog$year==2012 | 
+                       qog$year==2013 | 
+                       qog$year==2014 | 
+                       qog$year==2015)
+
+table(qog2000$gd_ptsa,qog2000$year)
+
+qog2000$perc2 <- qog2000$gd_ptsa
+
+qog2000$cntry<-countrycode(qog2000$ccodecow, "cown","country.name.en")
+
+qog2000$cntryears <- paste(qog2000$cntry,qog2000$year)
+
+physi2000 <- qog2000 %>% dplyr::select(cntryears, perc2)
+
+combined <- merge(combined, physi2000, by = "cntryears")
+
+physi22000 <- ddply(combined,~cntry,
+                summarise,terror=mean(perc2,na.rm=T))
+
+combined <- merge(combined, physi22000, by = "cntry")
+
+#table(qog2000$undp_hdi,qog2000$year)
+
+#physiff <- qog2000 %>% dplyr::select(cntryears, undp_hdi)
+
+#combined <- merge(combined, physiff, by = "cntryears")
+
+#physiff2 <- ddply(combined,~cntry,
+#                    summarise,hdi=mean(undp_hdi,na.rm=T))
+
+#combined <- merge(combined, physiff2, by = "cntry")
+
+
+gni <- read_csv("GNI.csv",  skip = 1)
+
+gni$`2015`<-gsub("ttt","",gni$`2015`)
+gni$`2015`<-gsub("ff","",gni$`2015`)
+gni$`2015`<-gsub("sss","",gni$`2015`)
+gni$`2015`<-gsub("uuu","",gni$`2015`)
+gni$`2015`<-gsub("o","",gni$`2015`)
+gni$`2015` <- as.numeric(gni$`2015`)
+
+gni$`2014`<-gsub("ttt","",gni$`2014`)
+gni$`2014`<-gsub("ff","",gni$`2014`)
+gni$`2014`<-gsub("sss","",gni$`2014`)
+gni$`2014`<-gsub("uuu","",gni$`2014`)
+gni$`2014`<-gsub("o","",gni$`2014`)
+gni$`2014` <- as.numeric(gni$`2014`)
+
+gni<-gni[,c(2,23:28)]
+
+gni<-gather(as.data.frame(gni),key = "Country")
+names(gni) <- c("cntry","year","gni")
+
+gni$cntry<-countrycode(gni$cntry,"country.name.en","country.name.en")
+gni$cntryears <- paste(gni$cntry,gni$year)
+
+physigni <- gni %>% dplyr::select(cntryears, gni)
+
+combined <- merge(combined, physigni, by = "cntryears")
+
+physigni2 <- ddply(combined,~cntry,
+                    summarise,gni_c=mean(gni,na.rm=T))
+
+combined <- merge(combined, physigni2, by = "cntry")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
