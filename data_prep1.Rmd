@@ -977,7 +977,7 @@ print(levels(vdem$regime))
   
 ```
 
-### To Do
+### To Do - Regions
 
 ```{r}
   mutate(regions = vdems_sub %>% 
@@ -1167,129 +1167,79 @@ save(level2,file="level2.Rdata")
 ```
 
 
-##### To Do
+# Weighting
+
+## Macro Level
 
 ```{r}
 
-
-
-table_stuff  <- combined %>% dplyr::select(cntry, gov_trust,
-                                           demtoday,delib10,polity10, discuss)
-table_stuff$gov_trust <- range01(table_stuff$gov_trust)*100
-table_stuff$demtoday <- range01(table_stuff$demtoday)*100
-
-table_stuff <- plyr::ddply(table_stuff, ~cntry,
+macro  <- combined %>% 
+                mutate(gov_trust = range01(gov_trust)*100) %>% 
+                mutate(demtoday = range01(demtoday)*100) %>% 
+                plyr::ddply(~cntry,
                      summarise,
                      mean_gov = mean(gov_trust, na.rm=T),
                      mean_dem = mean(demtoday, na.rm=T),
-                      discuss = mean(discuss, na.rm=T))
+                     discuss = mean(discuss, na.rm=T)) %>% 
+#                     polity10 = mean(polity10, na.rm=T),
+#                     polity_demdummy = mean(polity_demdummy, na.rm=T)) %>% 
+                mutate(discuss_round = round(discuss*4)) %>% 
+                mutate(mean_gov_low = case_when(
+                      discuss_round == 2 ~ mean_gov * .9,
+                      discuss_round == 1 ~ mean_gov * .85,
+                      discuss_round %in% c(3,4) ~ mean_gov)) %>% 
+                mutate(mean_gov_high = case_when(
+                      discuss_round == 2 ~ mean_gov * .8,
+                      discuss_round == 1 ~ mean_gov * .75,
+                      discuss_round %in% c(3,4) ~ mean_gov)) %>% 
+                merge(level2, by = "cntry") %>% 
+                mutate_at(vars(common10, reason10, consult10, 
+                 countr10, engage10, engage10, delib10), 
+                                          range01)
+
+macro_dem <- macro %>% 
+                      filter(polity_demdummy == 1)
+
+macro_aut <- macro %>% 
+                      filter(polity_demdummy == 0)
+
+# table_stuff2<-subset(table_stuff,
+#                      !is.na(table_stuff$regime) &
+#                        table_stuff$cntry!="Qatar" &
+#                       table_stuff$cntry!="Uzbekistan")
 
 
-table_stuff$mean_gov8 <- table_stuff$mean_gov
-table_stuff$mean_gov8[is.na(table_stuff$mean_gov8)]<-999
-
-table_stuff$mean_gov9 <- table_stuff$mean_gov
-table_stuff$mean_gov9[is.na(table_stuff$mean_gov9)]<-999
-
-table_stuff$mean_gov8[table_stuff$discuss2==2] <- table_stuff$mean_gov8[table_stuff$discuss2==2] *.9
-table_stuff$mean_gov8[table_stuff$discuss2==1] <- table_stuff$mean_gov8[table_stuff$discuss2==1] *.85
-
-table_stuff$mean_gov8[table_stuff$mean_gov8>100] <- NA
-table(table_stuff$mean_gov8)
-
-table_stuff$mean_gov9[table_stuff$discuss2==2] <- table_stuff$mean_gov9[table_stuff$discuss2==2] *.8
-table_stuff$mean_gov9[table_stuff$discuss2==1] <- table_stuff$mean_gov9[table_stuff$discuss2==1] *.75
-
-table_stuff$mean_gov9[table_stuff$mean_gov9>100] <- NA
-table(table_stuff$mean_gov9)
-
-
-
-table_stuff2<-subset(table_stuff,
-                     !is.na(table_stuff$regime) &
-                       table_stuff$cntry!="Qatar" &
-                       table_stuff$cntry!="Uzbekistan")
-
-table_stuff_dem <- subset(table_stuff, table_stuff$polity_demdummy == 1)
-table_stuff_aut <- subset(table_stuff, table_stuff$polity_demdummy == 0)
-
-table_stuff_dem2 <- subset(table_stuff2, table_stuff2$polity_demdummy == 1)
-table_stuff_aut2 <- subset(table_stuff2, table_stuff2$polity_demdummy == 0)
-
-
-table_stuff$regime <- factor(table_stuff$regime, labels = c("Autocracies","Anocracies","Democracies"))
-table_stuff2$regime <- factor(table_stuff$regime, labels = c("Autocracies","Anocracies","Democracies"))
-
-table_stuff$common10 <- range01(table_stuff$common10)
-table_stuff2$common10 <- range01(table_stuff2$common10)
-
-table_stuff$reason10 <- range01(table_stuff$reason10)
-table_stuff2$reason10 <- range01(table_stuff2$reason10)
-
-table_stuff$consult10 <- range01(table_stuff$consult10)
-table_stuff2$consult10 <- range01(table_stuff2$consult10)
-
-table_stuff$countr10 <- range01(table_stuff$countr10)
-table_stuff2$countr10 <- range01(table_stuff2$countr10)
-
-table_stuff$engage10 <- range01(table_stuff$engage10)
-table_stuff2$engage10 <- range01(table_stuff2$engage10)
-
-table_stuff$delib10 <- range01(table_stuff$delib10)
-table_stuff2$delib10 <- range01(table_stuff2$delib10)
-
-save(table_stuff,file="table_stuff.Rdata")
-
-table(table_stuff2$regime)
-
-tail(vdems_sub2$cntry,50)
-
-head(combined$latin)
-
-unique(merged$cntry)
-
-
-
-combined$discuss2 <- round(combined$discuss*4)
-combined$discuss2[is.nan(combined$discuss2)] <- 999
-table(combined$discuss2)
-
-combined$gov_trust8 <- combined$gov_trust
-combined$gov_trust8[is.na(combined$gov_trust8)]<-999
-
-combined$gov_trust9 <- combined$gov_trust
-combined$gov_trust9[is.na(combined$gov_trust9)]<-999
-#table(combined$discuss2==2)
-combined$gov_trust8[combined$discuss2==2] <- combined$gov_trust8[combined$discuss2==2] *.9
-combined$gov_trust8[combined$discuss2==1] <- combined$gov_trust8[combined$discuss2==1] *.85
-
-combined$gov_trust8[combined$gov_trust8>100] <- NA
-table(combined$gov_trust8)
-
-combined$gov_trust9[combined$discuss2==2] <- combined$gov_trust9[combined$discuss2==2] *.8
-combined$gov_trust9[combined$discuss2==1] <- combined$gov_trust9[combined$discuss2==1] *.75
-
-combined$gov_trust9[combined$gov_trust9>100] <- NA
-table(combined$gov_trust9)
-
-mean(combined$gov_trust, na.rm = T)
-mean(combined$gov_trust8, na.rm = T)
-mean(combined$gov_trust9, na.rm = T)
-
-
-
-
-
+save(macro, file="macro.Rdata")
+save(macro_dem, file="macro_dem.Rdata")
+save(macro_aut, file="macro_aut.Rdata")
 
 ```
 
+## Individual Level
+
+```{r}
+combined  <- combined %>% 
+                mutate(discuss_round = round(discuss*4)) %>% 
+                mutate(gov_trust_low = case_when(
+                      discuss_round == 2 ~ gov_trust * .9,
+                      discuss_round == 1 ~ gov_trust * .85,
+                      discuss_round %in% c(3,4) ~ gov_trust)) %>% 
+                mutate(gov_trust_high = case_when(
+                      discuss_round == 2 ~ gov_trust * .8,
+                      discuss_round == 1 ~ gov_trust * .75,
+                      discuss_round %in% c(3,4) ~ gov_trust)) %>% 
+                mutate_at(vars(common10, reason10, consult10, 
+                 countr10, engage10, engage10, delib10), 
+                                          range01)
+
+save(combined,file="combined.Rdata")
+
+```
 
 
 # Crap
 
 ```{r}
-
-
 
 compare_cntry<-data.frame(table(merged$cntry,merged$year))
 compare_cntry<-tidyr::spread(compare_cntry,Var2,Freq)
