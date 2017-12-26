@@ -8,6 +8,7 @@ output: html_notebook
 ```{r}
 library(pacman)
 
+#p_install_gh("favstats/favstats")
 p_load(tidyverse, haven,sjmisc,
                      forcats, weights, car,
                      countrycode, lavaan,

@@ -1,0 +1,68 @@
+addNAstr                Transform missing values of a factor to an
+                        extra level
+children                A fertility survey - "children" table
+chisq.residuals         Return the chi-squared residuals of a two-way
+                        frequency table.
+clipcopy                Transform an object into HTML and copy it for
+                        export
+cprop                   Column percentages of a two-way frequency
+                        table.
+cramer.v                Compute Cramer's V of a two-way frequency table
+cross.multi.table       Two-way frequency table between a multiple
+                        choices question and a factor
+describe                Describe the variables of a data.frame
+duplicated2             Determine all duplicate elements
+enfants                 A fertility survey - "enfants" table
+escape_regex            Escape regex special chars Code directly taken
+                        from Hmisc::escapeRegex
+fecondite               A fertility survey
+femmes                  A fertility survey - "femmes" table
+fertility               A fertility survey
+first_non_null          Return first non-null of two values
+format.proptab          S3 format method for proptab objects.
+freq                    Generate frequency tables.
+freq.na                 Generate frequency table of missing values.
+happy                   Data related to happiness from the General
+                        Social Survey, 1972-2006.
+hdv2003                 Histoire de vie 2003
+households              A fertility survey - "households" table
+icut                    Interactive conversion from numeric to factor
+ifunc_get_css           Returns custom CSS content
+ifunc_run_as_addin      Check if we are currently running as an rstudio
+                        addin
+ifunc_show_alert        Display an alert, only on first launch for the
+                        current session
+iorder                  Interactive reordering of factor levels
+irec                    Interactive recoding
+lookfor                 Look for keywords variable names and
+                        descriptions
+ltabs                   Cross tabulation with labelled variables
+menages                 A fertility survey - "menages" table
+multi.split             Split a multiple choices variable in a series
+                        of binary variables
+multi.table             One-way frequency table for multiple choices
+                        question
+na.rm                   Remove observations with missing values
+odds.ratio              Odds Ratio
+print.proptab           S3 print method for proptab objects.
+prop                    Global percentages of a two-way frequency
+                        table.
+qload                   Load one or more packages, installing them
+                        first if necessary
+qscan                   Scan R scripts and load/install all detected
+                        packages
+quant.cut               Transform a quantitative variable into a
+                        qualitative variable
+questionr               questionr
+recode.na               Recode values of a variable to missing values,
+                        using exact or regular expression matching.
+rename.variable         Rename a data frame column
+rm.unused.levels        Remove unused levels
+rp2012                  2012 French Census - French cities of more than
+                        2000 inhabitants
+rp99                    1999 French Census - Cities from the Rhône
+                        state
+rprop                   Row percentages of a two-way frequency table.
+women                   A fertility survey - "women" table
+wtd.mean                Weighted mean and variance of a vector
+wtd.table               Weighted one-way and two-way frequency tables.

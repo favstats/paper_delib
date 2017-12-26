@@ -1,0 +1,31 @@
+Package: questionr
+Maintainer: Julien Barnier <julien.barnier@ens-lyon.fr>
+Authors@R: c(person("Julien", "Barnier", email="julien.barnier@ens-lyon.fr",
+    role=c("aut","cre")), person("François", "Briatte",
+    email="f.briatte@gmail.com", role="aut"), person("Joseph", "Larmarange",
+    email="joseph@larmarange.net", role="aut"))
+Version: 0.6.2
+Date: 2017-11-01
+License: GPL (>= 2)
+Encoding: UTF-8
+Title: Functions to Make Surveys Processing Easier
+Description: Set of functions to make the processing and analysis of
+    surveys easier : interactive shiny apps and addins for data recoding,
+    contingency tables, dataset metadata handling, and several convenience
+    functions.
+Depends: R (>= 2.10)
+Imports: shiny (>= 0.13), miniUI, rstudioapi, highr, classInt,
+        htmltools, graphics, stats, utils, labelled (>= 1.0.0)
+Suggests: memisc, testthat, roxygen2, R2HTML, dplyr, forcats, knitr
+SystemRequirements: xclip (Linux)
+VignetteBuilder: knitr
+URL: https://juba.github.io/questionr/
+RoxygenNote: 6.0.1
+NeedsCompilation: no
+Packaged: 2017-11-01 04:55:19 UTC; julien
+Author: Julien Barnier [aut, cre],
+  François Briatte [aut],
+  Joseph Larmarange [aut]
+Repository: CRAN
+Date/Publication: 2017-11-01 07:39:09 UTC
+Built: R 3.4.2; ; 2017-11-19 12:29:31 UTC; windows
