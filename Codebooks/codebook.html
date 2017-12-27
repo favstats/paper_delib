@@ -81,6 +81,15 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="content-wrapper">
   <div class="inner clearfix">
     <section id="main-content">
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">pacman<span class="op">::</span><span class="kw">p_load</span>(tidyverse, haven, sjPlot, sjmisc,
+                     forcats, weights, car,
+                     survey, reshape2, favstats,
+                     magrittr, knitr)</code></pre></div>
+<div id="datencoding" class="section level1">
+<h1>Datencoding</h1>
+</div>
+<div id="codebook" class="section level1">
+<h1>Codebook</h1>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">view_df</span>(afro_<span class="dv">5</span>, <span class="dt">hide.progress =</span> T) <span class="co"># aus dem sjPlot package</span></code></pre></div>
 <table style="border-collapse:collapse; border:none;">
 <caption>
@@ -116,7 +125,7 @@ Country in an alphabetical order
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Algeria<br>Benin<br>Botswana<br>Burkina Faso<br>Burundi<br>Cameroon<br>Cape Verde<br>Cote dâIvoire<br>Egypt<br>Ethiopia<br>Ghana<br>Guinea<br>Kenya<br>Lesotho<br>Liberia<br><span style="omit">&lt;… truncated&gt;</span>
+Algeria<br>Benin<br>Botswana<br>Burkina Faso<br>Burundi<br>Cameroon<br>Cape Verde<br>Cote dâ€™Ivoire<br>Egypt<br>Ethiopia<br>Ghana<br>Guinea<br>Kenya<br>Lesotho<br>Liberia<br><span style="omit">&lt;… truncated&gt;</span>
 </td>
 </tr>
 <tr>
@@ -470,7 +479,7 @@ Q52a. Trust president
 -1<br>0<br>1<br>2<br>3<br>9<br>98
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Missing<br>Not at all<br>Just a little<br>Somewhat<br>A lot<br>Donât know/ Haven’t heard enough<br>Refused
+Missing<br>Not at all<br>Just a little<br>Somewhat<br>A lot<br>Donâ€™t know/ Haven’t heard enough<br>Refused
 </td>
 </tr>
 <tr>
@@ -1134,7 +1143,7 @@ Missing; RU,DE: Inappropriate response{Inappropriate}<br>Not asked in survey<br>
 trust_gov
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Confidence: The government (in your nationâs<br>capital)
+Confidence: The government (in your nationâ€™s<br>capital)
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 -5<br>-4<br>-3<br>-2<br>-1<br>1<br>2<br>3<br>4
@@ -1238,16 +1247,16 @@ Mexico<br>Guatemala<br>El Salvador<br>Honduras<br>Nicaragua<br>Costa Rica<br>Pan
 2
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-work
+year
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Employment Status
+Year
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-1<br>2<br>3<br>4<br>5<br>6<br>7<br>888888<br>977777<br>988888<br>999999
+888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Working<br>Not Working, but have a job<br>Actively looking for a job<br>Student<br>Taking care of the home<br>Retired, pensioner or permanently disabled to work<br>Not working and not looking for a job<br>DK<br>N/A Country/Year<br>NR<br>N/A
+DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 <tr>
@@ -1255,16 +1264,16 @@ Working<br>Not Working, but have a job<br>Actively looking for a job<br>Student<
 3
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-educ
+age
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Years of Schooling
+Age
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-0<br>18<br>888888<br>977777<br>988888<br>999999
+888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-None<br>18+<br>DK<br>N/A Country/Year<br>NR<br>N/A
+DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 <tr>
@@ -1272,16 +1281,16 @@ None<br>18+<br>DK<br>N/A Country/Year<br>NR<br>N/A
 4
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-income
+sex
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Monthly Household Income
+Sex
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-888888<br>977777<br>988888<br>999999
+1<br>2<br>888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-DK<br>N/A Country/Year<br>NR<br>N/A
+Male<br>Female<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 <tr>
@@ -1289,16 +1298,16 @@ DK<br>N/A Country/Year<br>NR<br>N/A
 5
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-sex
+income
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Sex
+Monthly Household Income
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1<br>2<br>888888<br>977777<br>988888<br>999999
+888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Male<br>Female<br>DK<br>N/A Country/Year<br>NR<br>N/A
+DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 <tr>
@@ -1306,16 +1315,16 @@ Male<br>Female<br>DK<br>N/A Country/Year<br>NR<br>N/A
 6
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-age
+educ
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Age
+Years of Schooling
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-888888<br>977777<br>988888<br>999999
+0<br>18<br>888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-DK<br>N/A Country/Year<br>NR<br>N/A
+None<br>18+<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 <tr>
@@ -1323,10 +1332,44 @@ DK<br>N/A Country/Year<br>NR<br>N/A
 7
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-trust_courts
+work
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Trust in Judicial System
+Employment Status
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>888888<br>977777<br>988888<br>999999
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+Working<br>Not Working, but have a job<br>Actively looking for a job<br>Student<br>Taking care of the home<br>Retired, pensioner or permanently disabled to work<br>Not working and not looking for a job<br>DK<br>N/A Country/Year<br>NR<br>N/A
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+8
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+demtoday
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Â¿Hasta quÃ© punto dirÃ­a que el gobierno actual<br>promueve y protege los principios
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>888888<br>977777<br>988888<br>999999
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Nada<br>(2)<br>(3)<br>(4)<br>(5)<br>(6)<br>Mucho<br>DK<br>N/A Country/Year<br>NR<br>N/A
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+9
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+trust_gov
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+Trust in Executive
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 1<br>7<br>888888<br>977777<br>988888<br>999999
@@ -1337,7 +1380,7 @@ Not at All<br>A Lot<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-8
+10
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 trust_parliament
@@ -1354,7 +1397,7 @@ Not at All<br>A Lot<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-9
+11
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 trust_police
@@ -1371,36 +1414,19 @@ Not at All<br>A Lot<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-10
+12
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-trust_gov
+trust_courts
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Trust in Executive
+Trust in Judicial System
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 1<br>7<br>888888<br>977777<br>988888<br>999999
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 Not at All<br>A Lot<br>DK<br>N/A Country/Year<br>NR<br>N/A
-</td>
-</tr>
-<tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-11
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-demtoday
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Â¿Hasta quÃ© punto dirÃ­a que el gobierno actual<br>promueve y protege los principios
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1<br>2<br>3<br>4<br>5<br>6<br>7<br>888888<br>977777<br>988888<br>999999
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Nada<br>(2)<br>(3)<br>(4)<br>(5)<br>(6)<br>Mucho<br>DK<br>N/A Country/Year<br>NR<br>N/A
 </td>
 </tr>
 </table>
@@ -1447,16 +1473,16 @@ Canada
 2
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-work
+year
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Employment status
+year
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-1<br>2<br>88<br>98<br>99
+2010
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-No<br>Yes<br>Don’t know<br>Skipped<br>Not Asked
+2010
 </td>
 </tr>
 <tr>
@@ -1464,16 +1490,12 @@ No<br>Yes<br>Don’t know<br>Skipped<br>Not Asked
 3
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-educ
+age
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Education
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>98<br>99
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-No schooling<br>Some elementary school<br>Completed elementary school<br>Some secondary/high school<br>Completed secondary/high school<br>Some technical, community college, CEGEP<br>Completed technical, community college, CEGEP<br>Some university<br>Completed BA<br>Completed MA or PhD<br>Skipped<br>Not Asked
+<td style="padding:0.2cm; text-align:left; vertical-align:top;" colspan="2">
+<em>range: 19-85</em>
 </td>
 </tr>
 <tr>
@@ -1481,12 +1503,16 @@ No schooling<br>Some elementary school<br>Completed elementary school<br>Some se
 4
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-income
+sex
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Gender
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee" colspan="2">
-<em>range: 1-10</em>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+1<br>2<br>8<br>9
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Male<br>Female<br>Skipped<br>Not Asked
 </td>
 </tr>
 <tr>
@@ -1494,16 +1520,12 @@ income
 5
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-sex
+income
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Gender
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1<br>2<br>8<br>9
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Male<br>Female<br>Skipped<br>Not Asked
+<td style="padding:0.2cm; text-align:left; vertical-align:top;" colspan="2">
+<em>range: 1-10</em>
 </td>
 </tr>
 <tr>
@@ -1511,12 +1533,16 @@ Male<br>Female<br>Skipped<br>Not Asked
 6
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-age
+educ
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Education
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee" colspan="2">
-<em>range: 19-85</em>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>98<br>99
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+No schooling<br>Some elementary school<br>Completed elementary school<br>Some secondary/high school<br>Completed secondary/high school<br>Some technical, community college, CEGEP<br>Completed technical, community college, CEGEP<br>Some university<br>Completed BA<br>Completed MA or PhD<br>Skipped<br>Not Asked
 </td>
 </tr>
 <tr>
@@ -1524,10 +1550,44 @@ age
 7
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-trust_courts
+work
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Extent - personally trust the justice system
+Employment status
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+1<br>2<br>88<br>98<br>99
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+No<br>Yes<br>Don’t know<br>Skipped<br>Not Asked
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+8
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+demtoday
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+Extent - current administration promotes and<br>protects democratic principles
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>88<br>98<br>99
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+1 - Not at all<br>2<br>3<br>4<br>5<br>6<br>7- A lot<br>Don’t know<br>Skipped<br>Not Asked
+</td>
+</tr>
+<tr>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+9
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+trust_gov
+</td>
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+Extent - personally trust the Prime Minister
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 1<br>2<br>3<br>4<br>5<br>6<br>7<br>88<br>98<br>99
@@ -1538,7 +1598,7 @@ Extent - personally trust the justice system
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-8
+10
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 trust_parliament
@@ -1555,7 +1615,7 @@ Extent - personally trust the Parliament
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-9
+11
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
 trust_police
@@ -1572,53 +1632,19 @@ Extent - personally trust the police
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-10
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-trust_gov
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-Extent - personally trust the Prime Minister
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-1<br>2<br>3<br>4<br>5<br>6<br>7<br>88<br>98<br>99
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-1 - Not at all<br>2<br>3<br>4<br>5<br>6<br>7- A lot<br>Don’t know<br>Skipped<br>Not Asked
-</td>
-</tr>
-<tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-11
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-demtoday
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Extent - current administration promotes and<br>protects democratic principles
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1<br>2<br>3<br>4<br>5<br>6<br>7<br>88<br>98<br>99
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-1 - Not at all<br>2<br>3<br>4<br>5<br>6<br>7- A lot<br>Don’t know<br>Skipped<br>Not Asked
-</td>
-</tr>
-<tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 12
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-year
+trust_courts
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-year
+Extent - personally trust the justice system
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-2010
+1<br>2<br>3<br>4<br>5<br>6<br>7<br>88<br>98<br>99
 </td>
 <td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
-2010
+1 - Not at all<br>2<br>3<br>4<br>5<br>6<br>7- A lot<br>Don’t know<br>Skipped<br>Not Asked
 </td>
 </tr>
 </table>
@@ -2291,6 +2317,7 @@ Mssing<br>A great deal of trust<br>Quite a lot of trust<br>Not very much trust<b
 </tr>
 </table>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">view_df</span>(taiwan   , <span class="dt">hide.progress =</span> T)</code></pre></div>
+income [5]
 <table style="border-collapse:collapse; border:none;">
 <caption>
 Data frame: taiwan
@@ -2378,137 +2405,120 @@ Missing<br>Male<br>Female
 </tr>
 <tr>
 <td style="padding:0.2cm; text-align:left; vertical-align:top;">
-5
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-income
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-se13a Where would you put yourself on this<br>staircase?
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
--1<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>97<br>98<br>99
-</td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
-Missing<br>Poorest<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>Richest<br>Do not understand the question<br>Can’t choose<br>Decline to answer
-</td>
-</tr>
-<tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 6
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 educ
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 se5 Education
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 -1<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>97<br>98<br>99
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 Missing<br>No formal education<br>Incomplete primary/elementary<br>Complete primary/elementary<br>Incomplete secondary/high school: technical/vocational type<br>Complete secondary/high school: technical/vocational type<br>Incomplete secondary/high school<br>Complete secondary/high school<br>Some university education<br>University education completed<br>Post-graduate degree<br>Do not understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 7
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 work
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 se9 Are you current employed?
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 -1<br>1<br>2<br>9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 Missing<br>Employed<br>Not employed<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 8
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 demtoday
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 94 Where would you place our country under the<br>present government?
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 -1<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>97<br>98<br>99
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 Missing<br>Completely Undemocratic<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>Completely democratic<br>Don’t understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 trust_gov
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 9 National government in the capital city
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 -1<br>1<br>2<br>3<br>4<br>7<br>8<br>9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 Mssing<br>A great deal of trust<br>Quite a lot of trust<br>Not very much trust<br>None at all<br>Do not understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 10
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 trust_parliament
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 11 Parliament
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 -1<br>1<br>2<br>3<br>4<br>7<br>8<br>9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 Mssing<br>A great deal of trust<br>Quite a lot of trust<br>Not very much trust<br>None at all<br>Do not understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 11
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 trust_police
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 14 The police
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 -1<br>1<br>2<br>3<br>4<br>7<br>8<br>9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top;">
+<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
 Mssing<br>A great deal of trust<br>Quite a lot of trust<br>Not very much trust<br>None at all<br>Do not understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
 <tr>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 12
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 trust_courts
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 8 The courts
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 -1<br>1<br>2<br>3<br>4<br>7<br>8<br>9
 </td>
-<td style="padding:0.2cm; text-align:left; vertical-align:top; background-color:#eeeeee">
+<td style="padding:0.2cm; text-align:left; vertical-align:top;">
 Mssing<br>A great deal of trust<br>Quite a lot of trust<br>Not very much trust<br>None at all<br>Do not understand the question<br>Can’t choose<br>Decline to answer
 </td>
 </tr>
@@ -3850,6 +3860,7 @@ No trust at all<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>Complete trust<b
 </td>
 </tr>
 </table>
+</div>
     </section>
   </div>
 </div>
