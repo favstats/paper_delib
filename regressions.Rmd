@@ -2,35 +2,72 @@
 title: "regressions"
 output: html_notebook
 ---
+# Loading in Functions
+
+```{r}
+vif.mer <- function (fit) {
+  ## adapted from rms::vif
+  
+  v <- vcov(fit)
+  nam <- names(fixef(fit))
+  
+  ## exclude intercepts
+  ns <- sum(1 * (nam == "Intercept" | nam == "(Intercept)"))
+  if (ns > 0) {
+    v <- v[-(1:ns), -(1:ns), drop = FALSE]
+    nam <- nam[-(1:ns)]
+  }
+  
+  d <- diag(v)^0.5
+  v <- diag(solve(v/(d %o% d)))
+  names(v) <- nam
+  v
+}
+```
+
 
 # Loading the Packages
 
 ```{r}
-
 
 #pacman::p_install_gh("favstats/favstats")
 pacman::p_load(tidyverse, haven, sjPlot, sjmisc, sjstats,
                      forcats, weights, car, lme4,
                      countrycode, ggthemes,
                      survey, reshape2, favstats,
-                     magrittr)
+                     magrittr, rlist)
 ```
 
 # Loading in Data
 
 ```{r}
-load("combined.Rdata")
+load("data/combined.Rdata")
+
+combined_dem <- combined %>% 
+  filter(regime == "demo")
+
+combined_aut <- combined %>% 
+  filter(regime != "demo")
 
 combined
 ```
 
 # Regressions
 
+## Null Model
+
 ```{r}
 fit0 <- lmer(gov_trust_high ~ 1 +
                  (1|cntry), data = combined, weights = weight)
 
 icc(fit0)
+```
+
+
+## W/O Controls
+
+```{r}
+
 
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
@@ -42,38 +79,226 @@ multilevels <- function(delibs) {
   return(result)
 }
 
+multilevels_dem <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i +
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
+  return(result)
+}
+
+multilevels_aut <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i +
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
+  return(result)
+}
+
 mods1 <- names(delibs) %>% 
   purrr::map(multilevels)
 
+mods2 <- names(delibs) %>% 
+  purrr::map(multilevels_dem)
+
+mods3 <- names(delibs) %>% 
+  purrr::map(multilevels_aut)
+
+listing <- function(...) {
+  rlist::list.flatten(rlist::list.append(...))
+}
+
+#list.flatten(list.append(mods1, mods2, mods3))
+
 anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
 
-plot_models2(mods1,
+plot_models2(listing(mods1, mods2, mods3),
              thatorder = anorder,
+             col_mods = c("#24C724", "#282BD4", "#F71818"),
+#             plot_colors = c("green","green","green","green","blue","green",
+#                             "green","blue","blue","blue","blue","blue",
+#                             "red","red","red","red","red","red"),
              exponentiate = F, std.est = "std", 
              rm.terms = c("sex","income","educ", 
                            "work", "age", "sex",
             "afro", "latino", "americas", "asian", "ESS"), 
-            show.values = T, show.p = T, geom.size = 3,
+            show.values = T, show.p = T,
+            labelv = -0.3, 
+            labelh = -0.9, 
+            labelsize = 3.2,
+            geom.size = 3, geom.spacing = 0.8, 
             show.legend = F) + 
             #geom.colors = palette(rainbow(18)) + 
             theme_economist_white() + 
             theme(legend.position = "right") 
 
 
+```
+## With Controls
+
+```{r}
+
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+
+multilevels_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i +
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
+  return(result)
+}
+
+multilevels_dem_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i +
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
+  return(result)
+}
+
+multilevels_aut_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + 
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
+  return(result)
+}
+
+mods1_c <- names(delibs) %>% 
+  purrr::map(multilevels_c)
+
+mods2_c <- names(delibs) %>% 
+  purrr::map(multilevels_dem_c)
+
+mods3_c <- names(delibs) %>% 
+  purrr::map(multilevels_aut_c)
+
+listing <- function(...) {
+  rlist::list.flatten(rlist::list.append(...))
+}
+
+#list.flatten(list.append(mods1, mods2, mods3))
+
+anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+
+plot_models2(listing(mods1_c, mods2_c, mods3_c),
+             thatorder = anorder,
+             col_mods = c("#24C724", "#282BD4", "#F71818"),
+#             plot_colors = c("green","green","green","green","blue","green",
+#                             "green","blue","blue","blue","blue","blue",
+#                             "red","red","red","red","red","red"),
+             exponentiate = F, std.est = "std", 
+             rm.terms = c("sex","income","educ", 
+                           "work", "age", "sex",
+            "afro", "latino", "americas", "asian", "ESS",
+            "ethnic10", "pop10"), 
+            show.values = T, show.p = T,
+            labelv = -0.3, 
+            labelh = -0.9, 
+            labelsize = 3.2,
+            geom.size = 3, geom.spacing = 0.8, 
+            show.legend = F) + 
+            #geom.colors = palette(rainbow(18)) + 
+            theme_economist_white() + 
+            theme(legend.position = "right") 
 
 ```
+
+## With Polity Controls
+
+### the right order has to be established
+
+```{r}
+
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+
+multilevels_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + polity_demdummy + polity_autodummy +
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
+  return(result)
+}
+
+multilevels_dem_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + polity10 +
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
+  return(result)
+}
+
+multilevels_aut_c <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + polity10 +
+                   ethnic10 + pop10 + #gdp10 + 
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
+  return(result)
+}
+
+mods1_c <- names(delibs) %>% 
+  purrr::map(multilevels_c)
+
+mods2_c <- names(delibs) %>% 
+  purrr::map(multilevels_dem_c)
+
+mods3_c <- names(delibs) %>% 
+  purrr::map(multilevels_aut_c)
+
+listing <- function(...) {
+  rlist::list.flatten(rlist::list.append(...))
+}
+
+#list.flatten(list.append(mods1, mods2, mods3))
+
+anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+
+plot_models2(listing(mods1_c, mods2_c, mods3_c),
+             thatorder = anorder,
+             col_mods = c("#24C724", "#282BD4", "#F71818"),
+#             plot_colors = c("green","green","green","green","blue","green",
+#                             "green","blue","blue","blue","blue","blue",
+#                             "red","red","red","red","red","red"),
+             exponentiate = F, std.est = "std", 
+             rm.terms = c("sex","income","educ", 
+                           "work", "age", "sex",
+            "afro", "latino", "americas", "asian", "ESS",
+            "ethnic10", "pop10", 
+            "polity_autodummy", "polity_demdummy", "polity10"), 
+            show.values = T, show.p = T,
+            labelv = -0.3, 
+            labelh = -0.9, 
+            labelsize = 3.2,
+            geom.size = 3, geom.spacing = 0.8, 
+            show.legend = F) + 
+            #geom.colors = palette(rainbow(18)) + 
+            theme_economist_white() + 
+            theme(legend.position = "right") 
+
+```
+
 
 # plot_models2
 
 ```{r}
-plot_models2 <- function (..., exponentiate, std.est = NULL, rm.terms = NULL, 
+plot_models2 <- function(..., exponentiate, std.est = NULL, rm.terms = NULL, 
           title = NULL, m.labels = NULL, legend.title = "Dependent Variables", 
           legend.pval.title = "p-level", axis.labels = NULL, axis.title = NULL, 
           axis.lim = NULL, wrap.title = 50, wrap.labels = 25, wrap.legend.title = 20, 
           grid.breaks = NULL, geom.size = 3, geom.spacing = 0.4, geom.colors = "Set1", 
           show.values = FALSE, show.legend = TRUE, show.intercept = FALSE, 
           show.p = TRUE, p.shape = FALSE, vline.type = 2, vline.color = "grey70", 
-          digits = 2, facet.grid = FALSE, thatorder = NULL) 
+          digits = 2, facet.grid = FALSE, thatorder = NULL, plot_colors = c("green","green","green","green","green","green",
+ "blue","blue","blue","blue","blue","blue",
+ "red","red","red","red","red","red"), col_mods = NULL, labelv = -0.5, labelh = -1.1, labelsize = 2) 
 {
   
   is_merMod <- function(fit) {
@@ -157,14 +382,14 @@ plot_models2 <- function (..., exponentiate, std.est = NULL, rm.terms = NULL,
 #if (!show.intercept) 
 #  fl <- purrr::map(fl, ~dplyr::slice(.x, -1))
 #if (!is.null(std.est)) {
-  
+#  
   get_p_stars <- function(pval) {
     dplyr::case_when(
       is.na(pval) ~ "",
       pval < 0.001 ~ "***",
       pval < 0.01 ~ "**",
       pval < 0.05 ~ "*",
-      pval < 0.10 ~ "(*)",
+      pval < 0.10 ~ "^",
       TRUE ~ ""
     )
   }
@@ -248,7 +473,7 @@ get_axis_limits_and_ticks <- function(axis.lim, min.val, max.val, grid.breaks, e
     m.labels <- suppressMessages(tibble::tidy_names(m.labels))
   ff$group <- as.factor(ff$group)
   levels(ff$group) <- m.labels
-  ff$group <- forcats::fct_rev(ff$group)
+#  ff$group <- forcats::fct_rev(ff$group)
   
   if (!is.null(thatorder)) ff$term <- forcats::fct_relevel(ff$term, thatorder)
   
@@ -346,7 +571,7 @@ get_axis_limits_and_ticks <- function(axis.lim, min.val, max.val, grid.breaks, e
                                 labels = c("n.s.", "*", "**", "***"))
   if (show.values) 
     p <- p + geom_text(aes_string(label = "p.label"), position = position_dodge(geom.spacing), 
-                       vjust = geom.spacing * -1.5, hjust = -0.1, show.legend = FALSE)
+                       vjust = geom.spacing * labelv, hjust = labelh, show.legend = FALSE, size = labelsize)
   if (is.null(axis.labels)) 
     axis.labels <- sjlabelled::get_term_labels(input_list)
   p <- p + scale_x_discrete(labels = sjmisc::word_wrap(axis.labels, 
@@ -371,9 +596,16 @@ get_axis_limits_and_ticks <- function(axis.lim, min.val, max.val, grid.breaks, e
  # p <- p + scale_colour_manual(values = col_check2(geom.colors, 
 #                                                   length(m.labels)))
  # p <- p + scale_colour_manual(values = palette(rainbow(18)))
-  p <- p + scale_colour_manual(values = c("green","red","black","black","black","black",
-                                          "black","black","black","black","black","black",
-                                          "black","black","black","black","black","black"))
+  if (!is.null(col_mods)) {
+    p <- p + scale_colour_manual(values = c(rep(col_mods[1], 4), 
+                                            col_mods[2], 
+                                            rep(col_mods[1], 2), 
+                                            rep(col_mods[2], 5), 
+                                            rep(col_mods[3], 6)))  
+  } else {
+  p <- p + scale_colour_manual(values = plot_colors)
+  }
+  
   p <- p + labs(x = NULL, 
                 y = sjmisc::word_wrap(
                   get_estimate_axis_title(
@@ -388,5 +620,94 @@ get_axis_limits_and_ticks <- function(axis.lim, min.val, max.val, grid.breaks, e
                 wrap = wrap.legend.title))
   p
 }
+
+```
+
+
+
+
+
+# Try Out
+
+```{r}
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+multilevels <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + ethnic10 + gdp10 + corrupt10 + lifeexp10 +
+               work10 + #glob10 + 
+         #        poly10 + 
+                 #polity_demdummy + polity_autodummy +
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
+  return(result)
+}  
+
+multilevels_dem <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + ethnic10 + gdp10 + corrupt10 + lifeexp10 +
+               work10 + #glob10 + 
+          #       poly10 + 
+                 #polity_demdummy + polity_autodummy +
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
+  return(result)
+}
+
+multilevels_aut <- function(delibs) {
+  result <- lmer(substitute(gov_trust_high ~ income + educ + 
+               work + age + sex + i + ethnic10 + gdp10 + corrupt10 + lifeexp10 +
+               work10 + #glob10 + 
+            #     poly10 + 
+                 #polity_demdummy + polity_autodummy +
+                 afro + latino + americas + asian + ESS +
+                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
+  return(result)
+}
+
+
+mods_all <- names(delibs) %>% 
+  purrr::map(multilevels)
+
+mods_d <- names(delibs) %>% 
+  purrr::map(multilevels_dem)
+
+mods_a <- names(delibs) %>% 
+  purrr::map(multilevels_aut)
+
+anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+
+plot_models2(listing(mods_all, mods_d, mods_a),
+             thatorder = anorder,
+             col_mods = c("#24C724", "#282BD4", "#F71818"),
+#             plot_colors = c("green","green","green","green","blue","green",
+#                             "green","blue","blue","blue","blue","blue",
+#                             "red","red","red","red","red","red"),
+             exponentiate = F, std.est = "std", 
+             rm.terms = c("sex","income","educ", 
+                           "work", "age", "sex",
+            "afro", "latino", "americas", "asian", "ESS"), 
+            show.values = T, show.p = T,
+            labelv = -0.3, 
+            labelh = -0.9, 
+            labelsize = 3.2,
+            geom.size = 3, geom.spacing = 0.8, 
+            show.legend = F) + 
+            #geom.colors = palette(rainbow(18)) + 
+            theme_economist_white() + 
+            theme(legend.position = "right") 
+
+vif.mer(mods_all[[3]])
+
+hist(combined$poly10)
+
+fit0 <- lmer(gov_trust_high ~ income + educ + 
+               work + age + sex + ethnic10 + gdp10 + corrupt10 + lifeexp10 +
+               work10 + #glob10 + 
+                 polity10 + 
+                 #polity_demdummy + polity_autodummy +
+                 afro + latino + americas + asian + ESS + (1|cntry), data = combined, weights = weight)
+
+plot_model(fit0)
 ```
 

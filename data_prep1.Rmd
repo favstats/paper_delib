@@ -1106,6 +1106,8 @@ table(subset(merged,merged$cntry=="Singapore")$survey,
 merged$year[merged$cntry=="Singapore" & merged$year == 1582] <- 2011
 
 hist(merged$gov_trust)
+
+save(merged, file = "data/level1.Rdata")
 ```
 
 
@@ -1170,11 +1172,21 @@ vdem <- vdems_start %>%
                  value.var=c("e_fh_ipolity2")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%
-  mutate(gdp10 = vdems_sub %>% 
+  mutate(poly10 = vdems_sub %>% 
            dcast(country_name ~ year, 
-                 value.var=c("e_GDP_Per_Cap_Haber_Men_2")) %>% #HIER MÜSSTE MAN 8 JAHRE GDP auswählen
+                 value.var=c("v2x_polyarchy")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%
+  mutate(rol10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_wbgi_rle")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%
+#  mutate(gdp10 = vdems_sub %>% filter(year %in% 2000:2008) %>% 
+#           dcast(country_name ~ year, 
+#                 value.var=c("e_GDP_Per_Cap_Haber_Men_2")) %>% 
+#           select(`2000`:`2010`) %>%
+#           rowMeans) %>%
   mutate(riw10 = vdems_sub %>% 
            dcast(country_name ~ year, 
                  value.var=c("e_v2x_regime_ci")) %>%
@@ -1205,11 +1217,11 @@ vdem <- vdems_start %>%
                  value.var=c("e_peaveduc")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%
-  mutate(gini10 = vdems_sub %>% 
-           dcast(country_name ~ year, 
-                 value.var=c("e_peginiwi")) %>%
-           select(`2000`:`2010`) %>%
-           rowMeans) %>% 
+#  mutate(gini10 = vdems_sub %>% 
+#           dcast(country_name ~ year, 
+#                 value.var=c("e_peginiwi")) %>%
+#           select(`2000`:`2010`) %>%
+#           rowMeans) %>% 
   # Dummy variables
   mutate(pol_round = round(polity10 * 2 -10)) %>% 
   mutate(polity_demdummy = ifelse(pol_round > 5, 1, 0)) %>% 
@@ -1234,7 +1246,7 @@ print(levels(vdem$regime))
 
 
 
-  
+# DURATION OF REGIME?! e_democracy_duration
 ```
 
 ### To Do - Regions
@@ -1363,25 +1375,92 @@ qog10 <- qog %>%
   tally() %>% 
   mutate(ethnic10 = qog10 %>%
            dcast(cntry ~ year, 
-                 value.var=c("al_ethnic"), 
+                 value.var = c("al_ethnic"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(gdp10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("gle_cgdpc"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(corrupt10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("bci_bci"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(lifeexp10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("wdi_lifexp"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(mortinf10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("wdi_mortinf"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(work10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("wdi_unemp"), 
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(frac_elites10 =  qog10 %>% filter(year %in% 2004:2010) %>%
+           dcast(cntry ~ year, 
+                 value.var = c("ffp_fe"), 
+          fun.aggregate = mean) %>%
+           select(`2004`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(glob10 = qog10 %>%
+           dcast(cntry ~ year, 
+                 value.var = c("dr_ig"), 
           fun.aggregate = mean) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>% 
   select(-n)
 #  mutate(al_ethnic = as.numeric(al_ethnic)) %>% 
-
+  
 qog10
 
+```
+
+## Gini Coefficient
+
+```{r}
+load("data/swiid6_1.rda")
+
+gini <- swiid_summary
+
+gini_sub <- gini %>% filter(year %in% 2000:2010)
+
+gini %<>% 
+  filter(year %in% 2000:2010) %>% 
+  group_by(country) %>%
+  tally %>%
+  mutate(cntry = unique(country)) %>%
+  #DCI Variables
+  mutate(gini10 = gini_sub %>%
+           dcast(country ~ year, 
+                 value.var = c("gini_disp")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en")) %>%  
+  select(cntry, gini10)
 
 
 ```
+
 
 ## Merging Time
 
 ### Level 2
 
 ```{r}
-level2 <- merge(x=qog10, y=vdem, by="cntry")
+level2 <- merge(x = qog10, y = vdem, by = "cntry") %>% merge(gini, by = "cntry")
 
 level2
 ```
@@ -1389,8 +1468,9 @@ level2
 ### Ind + Country
 
 ```{r}
+load("data/level1.Rdata")
 
-combined <- merge(x=merged, y=level2, by="cntry") %>% 
+combined <- merge(x = merged, y = level2, by = "cntry") %>% 
               mutate(cntryears = paste(cntry, year))
 
 #combined$cntryears <- paste(combined$cntry,combined$year)
@@ -1401,12 +1481,12 @@ vdem2 <- vdems_start %>%
   mutate(cntry = countrycode(country_name,"country.name.en","country.name.en")) #%>% 
  # select(cntry, country_name)
 
-vdem2$cntry[996] <- "Viet Nam"
-vdem2$cntry[997] <- "Viet Nam"
-vdem2$cntry[998] <- "Viet Nam"
-vdem2$cntry[999] <- "Viet Nam"
-vdem2$cntry[1000] <- "Viet Nam"
-vdem2$cntry[1001] <- "Viet Nam"
+# vdem2$cntry[996] <- "Viet Nam"
+# vdem2$cntry[997] <- "Viet Nam"
+# vdem2$cntry[998] <- "Viet Nam"
+# vdem2$cntry[999] <- "Viet Nam"
+# vdem2$cntry[1000] <- "Viet Nam"
+# vdem2$cntry[1001] <- "Viet Nam"
 
 combined <- vdem2 %>% 
   mutate(cntryears = paste(cntry, year)) %>% 
@@ -1419,11 +1499,11 @@ combined <- vdem2 %>%
   merge(combined, by = "cntry")
 
 
-combined
 
 
-save(combined,file="combined.Rdata")
-save(level2,file="level2.Rdata")
+
+save(combined,file = "data/combined.Rdata")
+save(level2,file = "data/level2.Rdata")
 ```
 
 
@@ -1469,9 +1549,9 @@ macro_aut <- macro %>%
 #                       table_stuff$cntry!="Uzbekistan")
 
 
-save(macro, file="macro.Rdata")
-save(macro_dem, file="macro_dem.Rdata")
-save(macro_aut, file="macro_aut.Rdata")
+save(macro, file = "data/macro.Rdata")
+save(macro_dem, file = "data/macro_dem.Rdata")
+save(macro_aut, file = "data/macro_aut.Rdata")
 
 ```
 
@@ -1492,7 +1572,7 @@ combined  <- combined %>%
                  countr10, engage10, engage10, delib10), 
                                           range01)
 
-save(combined,file="combined.Rdata")
+save(combined,file = "data/combined.Rdata")
 
 ```
 
