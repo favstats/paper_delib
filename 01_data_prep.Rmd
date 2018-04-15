@@ -14,7 +14,9 @@ p_load(tidyverse, haven,sjmisc,
                      countrycode, lavaan,
                      semTools, lavaan.survey,
                      survey, reshape2, favstats,
-                     magrittr)
+                     magrittr, skimr, xray)
+
+range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 ```
 
 # Loading the URLs
@@ -78,7 +80,7 @@ afro_5 <- afro5 %>%
     trust_parliament = Q59B,
     trust_police = Q59H,
     trust_courts = Q59J,
-    demtoday = Q46A
+    # demtoday = Q46A
   ) %>%
   mutate_at(
     vars(
@@ -101,12 +103,12 @@ afro_5 <- afro5 %>%
       998 = NA;
       999 = NA"
     ),
-    demtoday = Recode(
-      demtoday,
-      "-1 = NA;
-       98 = NA;
-       99 = NA"
-    ),
+    # demtoday = Recode(
+    #   demtoday,
+    #   "-1 = NA;
+    #    98 = NA;
+    #    99 = NA"
+    # ),
     educ = Recode(
       educ,
       "-1 = NA;
@@ -118,11 +120,17 @@ afro_5 <- afro5 %>%
     year = as.numeric(format(DATEINTR, "%Y"))
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 afro_5
+
+save(afro_5, file = "codebooks/singles/afro_5.Rdata")
+
+
+
+
 ```
 
 ## Afro 6
@@ -140,11 +148,11 @@ afro_6 <- afro6 %>%
     trust_parliament = Q52B,
     trust_police = Q52H,
     trust_courts = Q52J,
-    demtoday = Q40
+    # demtoday = Q40
   ) %>%
   mutate_at(
     vars(
-      income, demtoday, trust_gov,
+      income, trust_gov,
       trust_parliament, trust_police,
       trust_courts, work
     ),
@@ -171,29 +179,32 @@ afro_6 <- afro6 %>%
        99 = NA;
       999 = NA"
     ),
-    demtoday = Recode(
-      demtoday,
-      "8 = NA"
-    ),
+    # demtoday = Recode(
+    #   demtoday,
+    #   "8 = NA"
+    # ),
     cntry = to_label(COUNTRY_R5List),
     year = as.numeric(format(DATEINTR, "%Y"))
   ) %>%
-  #  mutate_at(vars(income, demtoday, educ, age,
+  #  mutate_at(vars(income, educ, age,
   #                 trust_gov, trust_parliament,
   #                 trust_police, trust_courts),
   #            as.character) %>%
-  #  mutate_at(vars(income, demtoday, educ, age,
+  #  mutate_at(vars(income, educ, age,
   #                 trust_gov, trust_parliament,
   #                 trust_police, trust_courts),
   #            as.numeric) %>%
   select(
     cntry, year, age, sex, income,
-    educ, work, demtoday,
+    educ, work, #demtoday,
     trust_gov, trust_parliament,
     trust_police, trust_courts
   ) 
 
 afro_6
+
+save(afro_6, file = "codebooks/singles/afro_6.Rdata")
+
 
 ```
 
@@ -203,7 +214,7 @@ afro_6
 afro_real <- afro_5 %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -213,7 +224,7 @@ afro_real <- afro_5 %>%
 afro_real2 <- afro_6 %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -239,7 +250,7 @@ latino_2013 <- latino2013 %>%
   rename(
     educ = REEDUC_1,
     income = S6,
-    demtoday = P50TGB.A,
+    # demtoday = P50TGB.A,
     age = S11
   ) %>%
   mutate(
@@ -262,11 +273,15 @@ latino_2013 <- latino2013 %>%
     )
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 latino_2013
+
+
+save(latino_2013, file = "codebooks/singles/latino_2013.Rdata")
+
 ```
 
 ## Latino 2015
@@ -279,7 +294,7 @@ latino_2015 <- latino2015 %>%
   rename(
     educ = REEDUC_1,
     income = S4,
-    demtoday = P17STGBS,
+    # demtoday = P17STGBS,
     age = S13
   ) %>%
   mutate(
@@ -301,11 +316,13 @@ latino_2015 <- latino2015 %>%
     year = 2015
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 latino_2015
+
+save(latino_2015, file = "codebooks/singles/latino_2015.Rdata")
 ```
 
 ## Merging the Data
@@ -314,7 +331,7 @@ latino_2015
 latino_real <- latino_2013 %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -324,7 +341,7 @@ latino_real <- latino_2013 %>%
 latino_real2 <- latino_2015 %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -348,7 +365,7 @@ wvs <- wvs_raw %>%
   rename(
     educ = V248,
     income = V239,
-    demtoday = V141,
+    # demtoday = V141,
     age = V242,
     year = V262
   ) %>%
@@ -371,7 +388,7 @@ wvs <- wvs_raw %>%
     cntry = to_label(V2)
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday,
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament,
     trust_police, trust_courts
   )
@@ -379,6 +396,8 @@ wvs <- wvs_raw %>%
 
 
 wvs
+
+save(wvs, file = "codebooks/singles/wvs.Rdata")
 ```
 
 # Americas Barometer
@@ -404,7 +423,7 @@ americas_ <- americas %>%
     trust_parliament = b13,
     trust_police = b18,
     trust_gov = b21a,
-    demtoday = n3
+    # demtoday = n3
   ) %>%
   mutate(
     sex = sex - 1, # sex variable erstellen
@@ -419,11 +438,14 @@ americas_ <- americas %>%
     )
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work,  
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 americas_
+
+
+save(americas_, file = "codebooks/singles/americas_.Rdata")
 ```
 
 
@@ -448,7 +470,7 @@ bolivia_ <- bolivia %>%
     trust_parliament = b13,
     trust_police = b18,
     trust_gov = b21a, # viele missing values
-    demtoday = n3
+    # demtoday = n3
   ) %>%
   mutate(
     sex = sex - 1, # sex variable erstellen
@@ -463,11 +485,14 @@ bolivia_ <- bolivia %>%
     )
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 bolivia_
+
+
+save(bolivia_, file = "codebooks/singles/bolivia_.Rdata")
 ```
 
 ## Canada
@@ -491,7 +516,7 @@ canada_ <- canada %>%
     trust_parliament = b13,
     trust_police = b18,
     trust_gov = b21a,
-    demtoday = n3
+    # demtoday = n3
   ) %>%
   mutate(
     sex = sex - 1, # sex variable erstellen
@@ -499,11 +524,14 @@ canada_ <- canada %>%
     income = ifelse(income == 88, NA, income)
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work,  
     trust_gov, trust_parliament, trust_police, trust_courts
   )
 
 canada_
+
+
+save(canada_, file = "codebooks/singles/canada_.Rdata")
 ```
 
 ## Merging the Data
@@ -512,7 +540,7 @@ canada_
 americas <- americas_ %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -522,7 +550,7 @@ americas <- americas_ %>%
 bolivia <- bolivia_ %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -532,7 +560,7 @@ bolivia <- bolivia_ %>%
 canada <- canada_ %>% 
   mutate_at(
     vars(
-      income, demtoday, educ,
+      income, educ,
       trust_gov, trust_parliament,
       trust_police, trust_courts
     ),
@@ -540,9 +568,13 @@ canada <- canada_ %>%
   )
 
 
-americas <- rbind(americas, bolivia, canada)
+americas <- rbind(americas, bolivia, canada) %>% 
+  mutate(cntry = as.character(cntry)) %>% 
+  mutate(cntry = ifelse(cntry == "Haití", "Haiti", cntry))
 
 americas
+# 
+# table(americas$cntry)
 ```
 
 # Asian Barometer
@@ -603,13 +635,13 @@ asian_3 <- asian_raw %>%
       se3a, # missing values l?schen
       "-1 = NA"
     ),
-    demtoday = Recode(
-      q91,
-      "-1 = NA;
-       97 = NA;
-       98 = NA;
-       99 = NA"
-    ),
+    # demtoday = Recode(
+    #   q91,
+    #   "-1 = NA;
+    #    97 = NA;
+    #    98 = NA;
+    #    99 = NA"
+    # ),
     educ = Recode(
       educ,
       "-1 = NA;
@@ -620,12 +652,14 @@ asian_3 <- asian_raw %>%
     year = as.numeric(format(ir9, "%Y"))
   ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, 
+    cntry, year, age, sex, income, educ, work, 
     trust_gov, trust_parliament, trust_police, trust_courts
   ) 
 
 asian_3
 
+
+save(asian_3, file = "codebooks/singles/asian_3.Rdata")
 ```
 
 ## Wave 4
@@ -674,13 +708,13 @@ needed <- function(data) {
         se3_2, # missing values l?schen
         "-1 = NA"
       ),
-      demtoday = Recode(
-        q94,
-        "-1 = NA;
-         97 = NA;
-         98 = NA;
-         99 = NA"
-      ),
+      # demtoday = Recode(
+      #   q94,
+      #   "-1 = NA;
+      #    97 = NA;
+      #    98 = NA;
+      #    99 = NA"
+      # ),
       educ = Recode(
         educ,
         "-1 = NA;
@@ -691,7 +725,7 @@ needed <- function(data) {
       year = year
     ) %>%
     select(
-      cntry, year, age, sex, income, educ, work, demtoday, 
+      cntry, year, age, sex, income, educ, work, 
       trust_gov, trust_parliament, trust_police, trust_courts
     )
   
@@ -717,7 +751,14 @@ singapore <- needed(singapore_raw) # Singapore hat extrem viele Missing values
 sk        <- needed(sk_raw)
 cambodia  <- needed(cambodia_raw)
 
-
+save(myanmar, file = "codebooks/singles/myanmar.Rdata")
+save(mongolia, file = "codebooks/singles/mongolia.Rdata")
+save(philip, file = "codebooks/singles/philip.Rdata")
+save(thai, file = "codebooks/singles/thai.Rdata")
+save(malay, file = "codebooks/singles/malay.Rdata")
+save(singapore, file = "codebooks/singles/singapore.Rdata")
+save(sk, file = "codebooks/singles/sk.Rdata")
+save(cambodia, file = "codebooks/singles/cambodia.Rdata")
 ```
 ## Sonderfall Taiwan
 
@@ -762,13 +803,13 @@ taiwan <- taiwan_raw %>%
         se3_2, # missing values l?schen
         "-1 = NA"
       ),
-      demtoday = Recode(
-        q94,
-        "-1 = NA;
-         97 = NA;
-         98 = NA;
-         99 = NA"
-      ),
+      # demtoday = Recode(
+      #   q94,
+      #   "-1 = NA;
+      #    97 = NA;
+      #    98 = NA;
+      #    99 = NA"
+      # ),
       educ = Recode(
         educ,
         "-1 = NA;
@@ -779,9 +820,12 @@ taiwan <- taiwan_raw %>%
       year = year
     ) %>%
     select(
-      cntry, year, age, sex, income, educ, work, demtoday, 
+      cntry, year, age, sex, income, educ, work,  
       trust_gov, trust_parliament, trust_police, trust_courts
     )
+
+
+save(taiwan, file = "codebooks/singles/taiwan.Rdata")
 
 ```
 
@@ -793,7 +837,7 @@ taiwan <- taiwan_raw %>%
 asian_3 %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -803,7 +847,7 @@ asian_3 %<>%
 myanmar %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -813,7 +857,7 @@ myanmar %<>%
 mongolia %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -823,7 +867,7 @@ mongolia %<>%
 philip %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -833,7 +877,7 @@ philip %<>%
 taiwan %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -843,7 +887,7 @@ taiwan %<>%
 thai %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -853,7 +897,7 @@ thai %<>%
 malay %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -863,7 +907,7 @@ malay %<>%
 singapore %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -873,7 +917,7 @@ singapore %<>%
 sk %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -883,7 +927,7 @@ sk %<>%
 cambodia %<>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -906,7 +950,7 @@ load(ESS_raw_url)
 
 ESS <- ESS_raw %>%
   rename(
-    demtoday = dmcntov,
+    # demtoday = dmcntov,
     age = agea,
     year = inwyys,
     trust_gov = trstplt,
@@ -924,21 +968,16 @@ ESS <- ESS_raw %>%
     sex = gndr - 1, # sex variable erstellen
     cntry = to_label(cntry)
   ) %>%  
-  mutate_at(
-    vars(
-      income, demtoday, educ,
-      trust_gov, trust_parliament,
-      trust_police, trust_courts
-    ),
-    stdz
-  ) %>%
   select(
-    cntry, year, age, sex, income, educ, work, demtoday, trust_gov, trust_parliament,
+    cntry, year, age, sex, income, educ, work, trust_gov, trust_parliament,
     trust_police, trust_courts
   )
 
 
 ESS
+
+
+save(ESS, file = "codebooks/singles/ESS.Rdata")
 ```
 
 
@@ -964,10 +1003,10 @@ asian %<>%
 
 wvs %<>%  
   mutate(survey = rep("wvs", nrow(wvs))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %<>%
+  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
@@ -976,15 +1015,23 @@ wvs %<>%
 
 ESS %<>%  
   mutate(survey = rep("ESS", nrow(ESS))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %<>%
+  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %>%
+    mutate_at(
+    vars(
+      income, educ,
+      trust_gov, trust_parliament,
+      trust_police, trust_courts
+    ),
+    stdz
+  ) %>%
     mutate_at(
       vars(
-        income, demtoday, educ,
+        income, educ,
         trust_gov, trust_parliament,
         trust_police, trust_courts
       ),
       range01
-    )
+    ) 
 
 unique(ESS$cntry)
 unique(asian$cntry)
@@ -1006,19 +1053,24 @@ merged %<>%
     ESS = ifelse(survey == "ESS", 1, 0)
   ) %>%
   # filter bad countries
-  filter(cntry != "Egypt") %>% # exclude Egypt 2013
-  filter(cntry != "Libya") %>% # exclude Libya 2014
-  filter(cntry != "Mali") %>% # exclude Mali 2012
-  filter(cntry != "Yemen") %>% # exclude Yemen 2012
-  filter(cntry != "Palestine, State of") # exclude Palestine 2013
+  filter(!(cntry == "Egypt" & year == 2013)) %>% # exclude Egypt 2013
+  filter(!(cntry == "Libya" & year == 2014)) %>% # exclude Libya 2014
+  filter(!(cntry == "Mali" & year == 2012)) %>% # exclude Mali 2012
+  filter(!(cntry == "Yemen" & year == 2012)) %>% # exclude Yemen 2012
+  filter(!(cntry == "Palestine, State of" & year == 2013)) # exclude Palestine 2013
 
 # adding weight
+not_character <- function(x) {
+  !(is.character(x))
+}
+
 merged %<>%
   group_by(cntry) %>%
   tally() %>%
   mutate(weight = 1000 / n) %>%
   select(cntry, weight) %>%
-  left_join(merged, "cntry")
+  left_join(merged, "cntry") %>% 
+  mutate_if(not_character, as.numeric)
 # select(cntry, year) %>%
 # unique %>%
 # View
@@ -1033,6 +1085,22 @@ table(merged$asian)
 table(merged$ESS)
 ```
 
+
+## Factor Analysis
+
+```{r}
+merged %>% 
+  select(trust_gov, trust_parliament, 
+           trust_police, trust_courts) %>% 
+  mutate_all(as.numeric) %>% 
+  psych::fa(weight = merged$weight) %>% 
+  psych::predict.psych(data = merged) %>%
+  as.data.frame() %>%
+  transmute(gov_trust = range01(MR1)*10) %>%
+  cbind(merged)
+
+merged
+```
 
 
 ## SEM Index
@@ -1515,11 +1583,11 @@ save(level2,file = "data/level2.Rdata")
 
 macro  <- combined %>% 
                 mutate(gov_trust = range01(gov_trust)*100) %>% 
-                mutate(demtoday = range01(demtoday)*100) %>% 
+                # mutate(demtoday = range01(demtoday)*100) %>% 
                 plyr::ddply(~cntry,
                      summarise,
                      mean_gov = mean(gov_trust, na.rm=T),
-                     mean_dem = mean(demtoday, na.rm=T),
+                     mean_dem = mean(na.rm=T),
                      discuss = mean(discuss, na.rm=T)) %>% 
 #                     polity10 = mean(polity10, na.rm=T),
 #                     polity_demdummy = mean(polity_demdummy, na.rm=T)) %>% 
@@ -1648,26 +1716,26 @@ arrange(cntry_table, wvs, afro)
 
 
 table(combined$politcat.x)
-mplusdata <- combined %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata <- combined %>% dplyr::select(cntry, delib10, 
                                         trust_gov, trust_parliament, 
                                         trust_police,trust_courts,weight)
 mplusdata <- na.omit(mplusdata)
 mplusdata$cntry <- as.numeric(mplusdata$cntry)
 write_csv(mplusdata, path = "mplusdata.csv", col_names = F)
 
-mplusdata2 <- combined %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata2 <- combined %>% dplyr::select(cntry, delib10, 
                                         gov_trust,weight)
 mplusdata2 <- na.omit(mplusdata2)
 mplusdata2$cntry <- as.numeric(mplusdata2$cntry)
 write_csv(mplusdata2, path = "mplusdat2a.csv", col_names = F)
 
-mplusdata2_dem <- combined_dem %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata2_dem <- combined_dem %>% dplyr::select(cntry, delib10, 
                                          gov_trust,weight)
 mplusdata2_dem <- na.omit(mplusdata2_dem)
 mplusdata2_dem$cntry <- as.numeric(mplusdata2_dem$cntry)
 write_csv(mplusdata2_dem, path = "mplusdat2_dema.csv", col_names = F)
 
-mplusdata2_aut <- combined_aut %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata2_aut <- combined_aut %>% dplyr::select(cntry, delib10, 
                                          gov_trust,weight)
 mplusdata2_aut <- na.omit(mplusdata2_aut)
 mplusdata2_aut$cntry <- as.numeric(mplusdata2_aut$cntry)
@@ -1677,7 +1745,7 @@ combined <- merge(combined, physi2_s, by = "cntry")
 
 combined_dem <- subset(combined,combined$polity_demdummy==1)
 
-mplusdata_dem <- combined_dem %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata_dem <- combined_dem %>% dplyr::select(cntry, delib10, 
                                         trust_gov, trust_parliament, 
                                         trust_police,trust_courts,weight)
 mplusdata_dem <- na.omit(mplusdata_dem)
@@ -1687,7 +1755,7 @@ write_csv(mplusdata_dem, path = "mplusdata_dem.csv", col_names = F)
 
 combined_aut <- subset(combined,combined$polity_demdummy==0)
 
-mplusdata_aut <- combined_aut %>% dplyr::select(cntry, delib10, demtoday, 
+mplusdata_aut <- combined_aut %>% dplyr::select(cntry, delib10, 
                                                 trust_gov, trust_parliament, 
                                                 trust_police,trust_courts,weight)
 mplusdata_aut <- na.omit(mplusdata_aut)
@@ -2052,14 +2120,14 @@ combined$educ <- as.numeric(combined$educ)
 combined$sex <- as.factor(combined$sex)
 combined$authoritarian <- as.numeric(combined$authoritarian)
 combined$safety <- as.numeric(combined$safety)
-combined$demtoday <- as.numeric(combined$demtoday)
+# combined$demtoday <- as.numeric(combined$demtoday)
 combined$latino <- factor(combined$latino)
 combined$afro <- factor(combined$afro)
 combined$americas <- factor(combined$americas)
 combined$asia <- combined$e.asia + combined$s.e.asia + combined$s.asia + combined$pacific
 
 cor(na.omit(data.frame(combined$gov_trust,combined$income,combined$educ, #Socioeconomic factors
-                       combined$delib10, combined$polity10, combined$gdp10, combined$demtoday)))
+                       combined$delib10, combined$polity10, combined$gdp10)))
 
 combined$cntry<-as.factor(combined$cntry)
 

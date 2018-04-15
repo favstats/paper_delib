@@ -1,0 +1,164 @@
+---
+title: "summaries2"
+author: "Fabio Votta"
+date: "14 April 2018"
+output: html_document
+---
+
+```{r chunks, include=FALSE}
+#Default Options - kann bei Gebrauch ge?ndert werden
+knitr::opts_chunk$set(echo = T # Whether to display code along with its results
+                      , eval = T # Whether to evaluate the code and include its results
+                      , results = "asis" # this at deafult is in end much more efficient
+                      , cache = F # Whether to cache results for future renders (efficient!)
+                      , warning = F # Whether to display errors
+                      , message = F # Whether to display messages
+                      , error = F # maybe turn on
+                      , tidy = F # Whether to reformat code in a tidy way when displaying it
+                      , fig.width = 6 #plot width at 6
+                      , fig.height = 4 #plot height at 4
+                      , fig.align = "center" #plot alignment center
+                      )
+
+options(xtable.comment = FALSE)
+```
+
+```{r setup}
+pacman::p_load(tidyverse, haven, sjPlot, sjmisc,
+                     forcats, weights, car,
+                     survey, reshape2,
+                     magrittr, knitr)
+
+describe_it <- function(.data) {
+  anomaly_dat <- xray::anomalies(.data %>% 
+                                   mutate_all(labelled::remove_val_labels) %>% 
+                                   select(-cntry, -year))
+  
+  if (nrow(anomaly_dat$problem_variables) == 0) {
+    cat("No Anomalies Found!") 
+    return(anomaly_dat$variables %>% skimr::kable())   
+    } else {
+    cat("Anomalies Found!") 
+   return(anomaly_dat$problem_variables %>% skimr::kable())   
+  }
+}
+
+```
+
+```{r}
+
+singles <- dir("singles")
+
+for (jj in singles) {
+  load(paste0("singles/", jj))
+}
+
+```
+
+
+# Afro 5
+
+```{r results='markup'}
+describe_it(afro_5)
+```
+
+# Afro 6
+
+```{r results='markup'}
+describe_it(afro_6)
+```
+
+# Americas Main
+
+```{r results='markup'}
+describe_it(americas_)
+```
+
+# asian_3
+
+```{r results='markup'}
+describe_it(asian_3)
+```
+# bolivia_
+
+```{r results='markup'}
+describe_it(bolivia_)
+```
+
+# cambodia
+
+```{r results='markup'}
+describe_it(cambodia)
+```
+
+# canada_
+
+```{r results='markup'}
+describe_it(canada_)
+```
+
+# ESS
+
+```{r results='markup'}
+describe_it(ESS)
+```
+
+# latino_2013
+
+```{r results='markup'}
+describe_it(latino_2013)
+```
+
+# latino_2015
+
+```{r results='markup'}
+describe_it(latino_2015)
+```
+
+# malay
+
+```{r results='markup'}
+describe_it(malay)
+```
+
+# mongolia
+
+```{r results='markup'}
+describe_it(mongolia)
+```
+
+# philip
+
+```{r results='markup'}
+describe_it(philip)
+```
+
+# singapore
+
+```{r results='markup'}
+describe_it(singapore)
+```
+
+# sk
+
+```{r results='markup'}
+describe_it(sk)
+```
+
+# taiwan
+
+```{r results='markup'}
+describe_it(taiwan)
+```
+
+# thai
+
+```{r results='markup'}
+describe_it(thai)
+```
+
+# wvs
+
+```{r results='markup'}
+describe_it(wvs)
+```
