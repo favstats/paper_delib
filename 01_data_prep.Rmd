@@ -1089,89 +1089,65 @@ table(merged$ESS)
 ## Factor Analysis
 
 ```{r}
+#TODO todor::
+
 merged %>% 
+  select(trust_gov, trust_parliament, 
+           trust_police, trust_courts) %>% 
+  psych::alpha()
+
+merged %>% 
+  select(trust_gov, trust_parliament, 
+           trust_police, trust_courts) %>% 
+  psych::KMO()
+
+
+merged %<>% 
   select(trust_gov, trust_parliament, 
            trust_police, trust_courts) %>% 
   mutate_all(as.numeric) %>% 
   psych::fa(weight = merged$weight) %>% 
-  psych::predict.psych(data = merged) %>%
+  psych::predict.psych(data = merged %>% 
+  select(trust_gov, trust_parliament, 
+           trust_police, trust_courts)) %>%
   as.data.frame() %>%
-  transmute(gov_trust = range01(MR1)*10) %>%
+  transmute(gov_trust = range01(MR1)) %>%
   cbind(merged)
 
 merged
 ```
 
 
-## SEM Index
 
-```{r}
-merged2 <- merged %>%
-  mutate(gov_trust = trust_gov + trust_parliament + 
-           trust_police + trust_courts) %>%
-  filter(!is.na(gov_trust))
-
-merged3 <- merged %>%
-  mutate(gov_trust = trust_gov + trust_parliament + 
-           trust_police + trust_courts) %>%
-  filter(is.na(gov_trust))
-
-svy.df <- survey::svydesign(id= ~1,
-                              weights= ~weight,
-                              data= merged) 
-
-model <- '# measurement model 1
-gov_trust2 =~ 1*trust_gov + trust_parliament + 
-trust_police + trust_courts
-trust_gov ~~ trust_parliament
-'
-
-merged <- merged %>%
-  mutate_at(vars(trust_gov, trust_parliament,
-                 trust_police, trust_courts), as.numeric)
-
-# cor(na.omit(data.frame(merged$trust_gov,
-#               merged$trust_police,
-#               merged$trust_courts,
-#               merged$trust_parliament,
-#               merged$demtoday)))
-
-lavaan_model1<-cfa(model, meanstructure = T, 
-                   data = as.data.frame(merged),
-                   estimator= "MLM")
-
-fit_a1<-lavaan.survey(lavaan_model1, 
-            estimator= "MLM", survey.design=svy.df)
-summary(fit_a1, standardized=TRUE,fit.measures = TRUE, rsq = T)
-
-merged4<-cbind(merged2, predict(fit_a1, newdata = merged2))
-merged4$gov_trust2<-range01(merged4$gov_trust2)
-
-# head(merged4)
-
-merged<-plyr::rbind.fill(merged3,merged4)
-merged$gov_trust<-merged$gov_trust2
-head(merged)
-```
 
 
 ## Some Recoding
 
 ```{r}
-table(merged$cntry,merged$year)
+table(merged$cntry, merged$year)
 
 table(subset(merged,merged$cntry=="China")$survey,
       subset(merged,merged$cntry=="China")$year)
 
-merged$year[merged$cntry=="China" & merged$year == 1583] <- 2011
-merged$year[merged$cntry=="China" & merged$year == 2000] <- 2011
-merged$year[merged$cntry=="China" & merged$year == 2077] <- 2011
-merged$year[merged$cntry=="China" & merged$year == 2012] <- 2011
+merged %<>% 
+  mutate(year = case_when(
+      cntry == "China" & year == 1583 ~ 2011,
+      cntry == "China" & year == 2000 ~ 2011,
+      cntry == "China" & year == 2077 ~ 2011,
+      cntry == "China" & year == 2012 ~ 2011,
+      cntry == "Singapore" & year == 1582 ~ 2011,
+      TRUE ~ year
+      
+  ))
+
+# merged$year[merged$cntry=="China" & merged$year == 2000] <- 2011
+# merged$year[merged$cntry=="China" & merged$year == 2077] <- 2011
+# merged$year[merged$cntry=="China" & merged$year == 2012] <- 2011
 
 table(subset(merged,merged$cntry=="Singapore")$survey,
       subset(merged,merged$cntry=="Singapore")$year)
 
-merged$year[merged$cntry=="Singapore" & merged$year == 1582] <- 2011
+# merged$year[merged$cntry=="Singapore" & merged$year == 1582] <- 2011
 
 hist(merged$gov_trust)
 
@@ -1285,13 +1261,89 @@ vdem <- vdems_start %>%
                  value.var=c("e_peaveduc")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%
+  mutate(equal_distrib10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2xeg_eqdr")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+   mutate(div_party10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_divparctrl")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+   mutate(div_power10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_feduni")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+   mutate(accountability10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2x_accountability")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%    
+   mutate(directdem10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2xdd_dd")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%      
+   mutate(eq_educ10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2peedueq")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%       
+    mutate(eq_health10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("v2pehealth")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+     mutate(controlcorruption10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_wbgi_cce")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+     mutate(eff10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_wbgi_gee")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>% 
+     mutate(stability10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_wbgi_pse")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%   
+     mutate(unified_dem10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_uds_mean")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%     
+     mutate(gdp_growth10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_migdpgrolns")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%       
+     mutate(infla10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_miinflat")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%       
+     # mutate(lifeexp10 = vdems_sub %>% 
+     #       dcast(country_name ~ year, 
+     #             value.var=c("e_pelifeex")) %>%
+     #       select(`2000`:`2010`) %>%
+     #       rowMeans) %>%        
+    mutate(urbanratio10 = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_miurbani")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%        
+  
 #  mutate(gini10 = vdems_sub %>% 
 #           dcast(country_name ~ year, 
 #                 value.var=c("e_peginiwi")) %>%
 #           select(`2000`:`2010`) %>%
 #           rowMeans) %>% 
   # Dummy variables
-  mutate(pol_round = round(polity10 * 2 -10)) %>% 
+  mutate(pol_round = round(polity10 * 2 - 10)) %>% 
   mutate(polity_demdummy = ifelse(pol_round > 5, 1, 0)) %>% 
   mutate(polity_anodummy = ifelse(pol_round >= -5 & pol_round <= 5, 1, 0)) %>% 
   mutate(polity_autodummy = ifelse(pol_round < -5, 1, 0)) %>% 
@@ -1302,7 +1354,8 @@ vdem <- vdems_start %>%
     )
   ) %>%
   mutate(regime = factor(regime, levels = c("demo", "ano", "auto"))) %>% 
-  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en"))
+  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en")) %>% 
+  select(-n)
 
 vdem$cntry[40] <- "Viet Nam"
 
@@ -1556,6 +1609,8 @@ vdem2 <- vdems_start %>%
 # vdem2$cntry[1000] <- "Viet Nam"
 # vdem2$cntry[1001] <- "Viet Nam"
 
+# v2x_freexp_thick freedom of expression
+
 combined <- vdem2 %>% 
   mutate(cntryears = paste(cntry, year)) %>% 
   mutate(discuss_unsel = v2xcl_disc) %>% 
@@ -1646,6 +1701,57 @@ save(combined,file = "data/combined.Rdata")
 
 
 # Crap
+
+## SEM Index
+
+```{r}
+merged2 <- merged %>%
+  mutate(gov_trust = trust_gov + trust_parliament + 
+           trust_police + trust_courts) %>%
+  filter(!is.na(gov_trust))
+
+merged3 <- merged %>%
+  mutate(gov_trust = trust_gov + trust_parliament + 
+           trust_police + trust_courts) %>%
+  filter(is.na(gov_trust))
+
+svy.df <- survey::svydesign(id= ~1,
+                              weights= ~weight,
+                              data= merged) 
+
+model <- '# measurement model 1
+gov_trust2 =~ 1*trust_gov + trust_parliament + 
+trust_police + trust_courts
+trust_gov ~~ trust_parliament
+'
+
+merged <- merged %>%
+  mutate_at(vars(trust_gov, trust_parliament,
+                 trust_police, trust_courts), as.numeric)
+
+# cor(na.omit(data.frame(merged$trust_gov,
+#               merged$trust_police,
+#               merged$trust_courts,
+#               merged$trust_parliament,
+#               merged$demtoday)))
+
+lavaan_model1<-cfa(model, meanstructure = T, 
+                   data = as.data.frame(merged),
+                   estimator= "MLM")
+
+fit_a1<-lavaan.survey(lavaan_model1, 
+            estimator= "MLM", survey.design=svy.df)
+summary(fit_a1, standardized=TRUE,fit.measures = TRUE, rsq = T)
+
+merged4<-cbind(merged2, predict(fit_a1, newdata = merged2))
+merged4$gov_trust2<-range01(merged4$gov_trust2)
+
+# head(merged4)
+
+merged<-plyr::rbind.fill(merged3,merged4)
+merged$gov_trust<-merged$gov_trust2
+head(merged)
+```
 
 ```{r}
 

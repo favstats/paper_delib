@@ -1,0 +1,109 @@
+---
+title: "Tables"
+output: html_notebook
+---
+
+# Loading the Packages
+
+```{r}
+library(pacman)
+
+#p_install_gh("favstats/favstats")
+p_load(tidyverse, haven,sjmisc,
+                     forcats, weights, car,
+                     countrycode, reshape2, 
+                     magrittr)
+
+range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
+specify_decimal <- function(x, k) trimws(format(round(x, k), nsmall=k))
+
+options(xtable.sanitize.rownames.function = identity)
+options(xtable.sanitize.colnames.function = identity)
+options(xtable.sanitize.text.function = identity)
+load("data/combined.Rdata")
+
+
+```
+
+# Correlation Table
+
+```{r}
+make_bold <- function(makethisbold) {
+ makethisbold <- specify_decimal(makethisbold, 2)
+  if (makethisbold <= 0.5) {
+  return(paste0("\\textbf{", makethisbold, "}"))
+  } else return(makethisbold)
+}
+
+combined %>% 
+  select(delib10:engage10, polity10) %>% 
+  mutate_all(as.numeric) -> combined_all_table
+
+cormat_all <- round(cor(combined_all_table, use = "pairwise.complete.obs"),3)
+
+combined %>% 
+  filter(regime == "demo") %>% 
+  select(delib10:engage10, polity10) %>% 
+  mutate_all(as.numeric) -> combined_demo_table
+
+cormat_dem <- round(cor(combined_demo_table, use = "pairwise.complete.obs"),3)
+
+combined %>% 
+  filter(regime != "demo") %>% 
+  select(delib10:engage10, polity10) %>% 
+  mutate_all(as.numeric) -> combined_nondemo_table
+
+cormat_nondem <- round(cor(combined_nondemo_table, use = "pairwise.complete.obs"),3)
+
+
+rbind(
+cormat_all %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "polity10") %>% 
+  mutate(cor_with = paste0("Complete Data (n=", nrow(combined %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:polity10), make_bold),
+
+
+cormat_dem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "polity10") %>% 
+  mutate(cor_with = paste0("Democracies (n=", nrow(combined %>% 
+                                                      filter(regime == "demo") %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:polity10), make_bold),
+
+
+
+cormat_nondem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "polity10") %>% 
+  mutate(cor_with = paste0("Non-Democracies (n=", nrow(combined %>% 
+                                                      filter(regime != "demo") %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:polity10), make_bold)
+) -> combined_table
+
+combined_table %<>% 
+  column_to_rownames("cor_with") %>% 
+  select(delib10, reason10, common10, countr10, countr10, consult10, engage10, polity10)
+colnames(combined_table) <- c("\\textbf{DCI}", 
+                              "\\textbf{RJ}", 
+                              "\\textbf{CG}", 
+                              "\\textbf{CA}", 
+                              "\\textbf{RoC}", 
+                              "\\textbf{ES}", 
+                              "\\textbf{Polity/FH}") 
+
+library(xtable)
+combined_latex <- xtable(combined_table)
+
+print(combined_latex, booktabs = T)
+```
+
