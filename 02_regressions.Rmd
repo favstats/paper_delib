@@ -5,24 +5,14 @@ output: html_notebook
 # Loading in Functions
 
 ```{r}
-vif.mer <- function (fit) {
-  ## adapted from rms::vif
-  
-  v <- vcov(fit)
-  nam <- names(fixef(fit))
-  
-  ## exclude intercepts
-  ns <- sum(1 * (nam == "Intercept" | nam == "(Intercept)"))
-  if (ns > 0) {
-    v <- v[-(1:ns), -(1:ns), drop = FALSE]
-    nam <- nam[-(1:ns)]
-  }
-  
-  d <- diag(v)^0.5
-  v <- diag(solve(v/(d %o% d)))
-  names(v) <- nam
-  v
-}
+source("scripts/helper_functions.R")
+options(scipen = 999)
+
+# Specify the width of your confidence intervals
+interval1 <- -qnorm((1-0.9)/2)  # 90% multiplier
+interval2 <- -qnorm((1-0.95)/2) # 95% multiplier
+
+
 ```
 
 
@@ -30,12 +20,33 @@ vif.mer <- function (fit) {
 
 ```{r}
 
+
+# pacman::p_install_gh("systats/tidyTX")
+# pacman::p_install_gh("systats/tidyMBO")
 #pacman::p_install_gh("favstats/favstats")
 pacman::p_load(tidyverse, haven, sjPlot, sjmisc, sjstats,
                      forcats, weights, car, lme4,
                      countrycode, ggthemes,
                      survey, reshape2, favstats,
-                     magrittr, rlist)
+                     magrittr, rlist, tidyMBO, tidyTX,
+                     ggstance)
+
+GeomPointrange$draw_key <-  function (data, params, size)     {
+
+         draw_key_vpath <- function (data, params, size) {
+           # only need to change the x&y coords so that the line is horizontal
+           # originally, the vertical line was `0.5, 0.1, 0.5, 0.9`
+              segmentsGrob(0.1, 0.5, 0.9, 0.5, 
+              gp = gpar(col = alpha(data$colour, data$alpha), 
+              lwd = data$size * .pt, lty = data$linetype, 
+              lineend = "butt"), arrow = params$arrow)
+              }
+
+    grobTree(draw_key_vpath(data, params, size), 
+             draw_key_point(transform(data, size = data$size * 4), params))
+}
+
+tidy
 ```
 
 # Loading in Data
@@ -44,588 +55,2383 @@ pacman::p_load(tidyverse, haven, sjPlot, sjmisc, sjstats,
 load("data/combined.Rdata")
 
 combined_dem <- combined %>% 
-  filter(regime == "demo")
+  filter(regime == "demo") %>% 
+  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01) %>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
 
-combined_aut <- combined %>% 
-  filter(regime != "demo")
+combined_nondem <- combined %>% 
+  filter(regime != "demo") %>% 
+  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01) %>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
+
+combined %<>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
+
+
 
 combined
-```
-
-# plot_models2
-
-```{r}
-plot_models2 <- function(..., exponentiate, std.est = NULL, rm.terms = NULL, 
-          title = NULL, m.labels = NULL, legend.title = "Dependent Variables", 
-          legend.pval.title = "p-level", axis.labels = NULL, axis.title = NULL, 
-          axis.lim = NULL, wrap.title = 50, wrap.labels = 25, wrap.legend.title = 20, 
-          grid.breaks = NULL, geom.size = 3, geom.spacing = 0.4, geom.colors = "Set1", 
-          show.values = FALSE, show.legend = TRUE, show.intercept = FALSE, 
-          show.p = TRUE, p.shape = FALSE, vline.type = 2, vline.color = "grey70", 
-          digits = 2, facet.grid = FALSE, thatorder = NULL, plot_colors = c("green","green","green","green","green","green",
- "blue","blue","blue","blue","blue","blue",
- "red","red","red","red","red","red"), col_mods = NULL, labelv = -0.5, labelh = -1.1, labelsize = 2) 
-{
-  
-  is_merMod <- function(fit) {
-    inherits(fit, c("lmerMod", "glmerMod", "nlmerMod", "merModLmerTest"))
-  }
-  
-  #' @importFrom sjmisc str_contains
-  get_glm_family <- function(fit) {
-    c.f <- class(fit)
-    
-    # do we have glm? if so, get link family. make exceptions
-    # for specific models that don't have family function
-    if (any(c.f %in% c("lme", "plm"))) {
-      fitfam <- ""
-      logit_link <- FALSE
-    } else {
-      fitfam <- stats::family(fit)$family
-      logit_link <- stats::family(fit)$link == "logit"
-    }
-    
-    # create logical for family
-    binom_fam <- fitfam %in% c("binomial", "quasibinomial")
-    poisson_fam <- fitfam %in% c("poisson", "quasipoisson") ||
-      sjmisc::str_contains(fitfam, "negative binomial", ignore.case = T)
-    
-    list(is_bin = binom_fam, is_pois = poisson_fam, is_logit = logit_link)
-  }
-  
-  # return names of objects passed as ellipses argument
-  dot_names <- function(dots) unname(unlist(lapply(dots, as.character)))
-  
-  
-  #' @importFrom tidyr nest
-  #' @importFrom dplyr select filter
-  #' @importFrom stats complete.cases
-  #' @importFrom rlang .data
-  get_grouped_data <- function(x) {
-    # nest data frame
-    grps <- tidyr::nest(x)
-    
-    # remove NA category
-    cc <- grps %>%
-      dplyr::select(-.data$data) %>%
-      stats::complete.cases()
-    
-    # select only complete cases
-    grps <- grps %>% dplyr::filter(!! cc)
-    
-    # arrange data
-    if (length(attr(x, "vars", exact = T)) == 1)
-      reihe <- order(grps[[1]])
-    else
-      reihe <- order(grps[[1]], grps[[2]])
-    grps <- grps[reihe, ]
-    
-    grps
-  }
-  
-  
-  str_ends_with <- function(x, .match) {
-    l <- nchar(x)
-    n <- nchar(.match)
-    m <- substr(x, pmax(1, l - n + 1), l)
-    which(m == .match)
-  }
-  
-  input_list <- tibble::lst(...)
-  if (length(input_list) == 1 && class(input_list[[1]]) == 
-      "list") 
-    input_list <- purrr::map(input_list[[1]], ~.x)
-  if (missing(exponentiate)) 
-    exponentiate <- inherits(input_list[[1]], c("glm", "glmerMod", 
-                                                "glmmTMB"))
-  if (!any(inherits(input_list[[1]], c("lm", "lmerMod", "lme", "merModLmerTest"), 
-                    which = TRUE) == 1)) 
-    std.est <- NULL
-
-#purrr::map(input_list, ~summary(.x))
-#summary(input_list)
-#s$coefficients[,5]
-#if (!show.intercept) 
-#  fl <- purrr::map(fl, ~dplyr::slice(.x, -1))
-#if (!is.null(std.est)) {
-#  
-  get_p_stars <- function(pval) {
-    dplyr::case_when(
-      is.na(pval) ~ "",
-      pval < 0.001 ~ "***",
-      pval < 0.01 ~ "**",
-      pval < 0.05 ~ "*",
-      pval < 0.10 ~ "^",
-      TRUE ~ ""
-    )
-  }
-  
-#    fl <- fl %>% purrr::map(~sjstats::std_beta(.x, 
-#                                 type = std.est)) %>% 
-#                    purrr::map(~sjmisc::var_rename(.x, 
-#                   std.estimate = "estimate")) %>% 
-#      purrr::map2(input_list,  ~tieele::add_column(.x, 
-#                    p.value = sjstats::get_model_pval(.y)[["p.value"]][-1]))
-#  }
-input_list2 <- input_list %>% 
-  purrr::map(~sjstats::std_beta(.x, type = std.est)) %>% 
-  purrr::map(~sjmisc::var_rename(.x,  std.estimate = "estimate")) 
-
-input_list2  <- purrr::map(input_list2 , ~dplyr::slice(.x, -1))
-
-nineties <- function(x) {
-  x$conf.high2 <- x$estimate + 1.645 * x$std.error
-  x$conf.low2 <- x$estimate - 1.645 * x$std.error
-  s <- tibble(x$conf.high2,x$conf.low2)
-  names(s) <- c("conf.high2","conf.low2")
-  s
-}
-
-input_list2 <- purrr::map(input_list2 , ~nineties(.x)) %>%  purrr::map2(input_list2, cbind) 
-
-
-fl <- input_list2 %>% 
-  purrr::map2(input_list, ~tibble::add_column(.x, p.value = sjstats::p_value(.y)[["p.value"]][-1]))
-
-get_axis_limits_and_ticks <- function(axis.lim, min.val, max.val, grid.breaks, exponentiate) {
-  # axis limits
-  if (is.null(axis.lim)) {
-    lower_lim <- min.val * .95
-    upper_lim <- max.val * 1.05
-  } else {
-    lower_lim <- axis.lim[1]
-    upper_lim <- axis.lim[2]
-  }
-  
-  # determine gridbreaks
-  if (is.null(grid.breaks)) {
-    if (exponentiate) {
-      # use pretty distances for log-scale
-      ticks <- grDevices::axisTicks(log(c(lower_lim, upper_lim)), log = TRUE)
-      # make sure that scale is not too wide
-      ticks <- ticks[1:which(ticks > max.val)[1]]
-    } else {
-      ticks <- pretty(c(lower_lim, upper_lim))
-    }
-  } else {
-    ticks <- seq(lower_lim, upper_lim, by = grid.breaks)
-  }
-  
-  # save proper axis limits
-  list(axis.lim = c(min(ticks), max(ticks)), ticks = ticks)
-}
-#s$coefficients[,5]
-    if (!show.intercept) 
-      fl <- purrr::map(fl, ~dplyr::slice(.x, -1))
-  
-  if (exponentiate) 
-    fl <- purrr::map(fl, function(x) {
-      x[["estimate"]] <- exp(x[["estimate"]])
-      x[["conf.low"]] <- exp(x[["conf.low"]])
-      x[["conf.high"]] <- exp(x[["conf.high"]])
-      x
-    })
-  for (i in 1:length(fl)) fl[[i]] <- tibble::add_column(fl[[i]], 
-                                                        group = as.character(i))
-  ff <- dplyr::bind_rows(fl)
-  if (!is.null(std.est) && std.est == "std2") 
-    ff$term <- substring(ff$term, first = 3)
-  if (!is.null(rm.terms)) 
-    ff <- subset(ff,!(ff$term %in% rm.terms))
-  if (is.null(m.labels)) 
-    m.labels <- sjlabelled::get_dv_labels(input_list)
-  m.labels <- sjmisc::word_wrap(m.labels, wrap = wrap.labels)
-  if (anyDuplicated(m.labels) > 0) 
-    m.labels <- suppressMessages(tibble::tidy_names(m.labels))
-  ff$group <- as.factor(ff$group)
-  levels(ff$group) <- m.labels
-#  ff$group <- forcats::fct_rev(ff$group)
-  
-  if (!is.null(thatorder)) ff$term <- forcats::fct_relevel(ff$term, thatorder)
-  
-  ff$term <- forcats::fct_rev(ff$term)
-  
-  ff$p.stars <- get_p_stars(ff$p.value)
-  ff$p.label <- sprintf("%.*f", digits, ff$estimate)
-  if (show.p) 
-    ff$p.label <- sprintf("%s %s", ff$p.label, ff$p.stars)
-  if (p.shape) 
-    p <- ggplot(ff, aes_string(x = "term", y = "estimate", 
-                               colour = "group", shape = "p.stars"))
-  else p <- ggplot(ff, aes_string(x = "term", y = "estimate", 
-                                  colour = "group"))
-  p <- p + geom_hline(yintercept = 0, 
-                       linetype = vline.type, 
-                       color = vline.color) + 
-    geom_point(position = position_dodge(geom.spacing), size = geom.size) + 
-    geom_errorbar(aes_string(ymin = "conf.low2", 
-                             ymax = "conf.high2"), 
-                  position = position_dodge(geom.spacing), width = 0) + 
-    coord_flip() + 
-    guides(colour = guide_legend(reverse = TRUE))
-  
-  get_estimate_axis_title <- function(fit, axis.title) {
-    # check if we have a linear model
-    is.linear.model <- any(inherits(fit, c("lm", "lmerMod", "lme"), which = TRUE) == 1)
-    
-    if (!is.linear.model) {
-      # get information of glm
-      fitfam <- get_glm_family(fit)
-      
-      # create logical for family
-      poisson_fam <- fitfam$is_pois
-      binom_fam <- fitfam$is_bin
-      logit_link <- fitfam$is_logit
-    }
-    
-    # check default label and fit family
-    if (is.null(axis.title)) {
-      if (is.linear.model)
-        axis.title <- "Estimates"
-      else if (poisson_fam)
-        axis.title <- "Incident Rate Ratios"
-      else if (binom_fam && !logit_link)
-        axis.title <- "Risk Ratios"
-      else
-        axis.title <- "Odds Ratios"
-    }
-    
-    axis.title
-  }
-  
-  col_check2 <- function(geom.colors, collen) {
-    # --------------------------------------------
-    # check color argument
-    # --------------------------------------------
-    # check for corrct color argument
-    if (!is.null(geom.colors)) {
-      # check for color brewer palette
-      #if (is.brewer.pal(geom.colors[1])) {
-      if (TRUE) {
-        geom.colors <- scales::brewer_pal(palette = geom.colors[1])(collen)
-      } 
-      else if (geom.colors[1] == "gs") {
-        geom.colors <- scales::grey_pal()(collen)
-        # do we have correct amount of colours?
-      } else if (geom.colors[1] == "bw") {
-        geom.colors <- rep("black", times = collen)
-        # do we have correct amount of colours?
-      } else if (length(geom.colors) > collen) {
-        # shorten palette
-        geom.colors <- geom.colors[1:collen]
-      } else if (length(geom.colors) < collen) {
-        # warn user abount wrong color palette
-        warning(
-          sprintf(
-            "Insufficient length of color palette provided. %i color values needed.",
-            collen
-          ),
-          call. = F
-        )
-        # set default palette
-        geom.colors <- scales::brewer_pal(palette = "Set1")(collen)
-      }
-    } else {
-      geom.colors <- scales::brewer_pal(palette = "Set1")(collen)
-    }
-    
-    geom.colors
-  }
-  
-  if (p.shape) 
-    p <- p + scale_shape_manual(values = c(1, 16, 17, 15), 
-                                labels = c("n.s.", "*", "**", "***"))
-  if (show.values) 
-    p <- p + geom_text(aes_string(label = "p.label"), position = position_dodge(geom.spacing), 
-                       vjust = geom.spacing * labelv, hjust = labelh, show.legend = FALSE, size = labelsize)
-  if (is.null(axis.labels)) 
-    axis.labels <- sjlabelled::get_term_labels(input_list)
-  p <- p + scale_x_discrete(labels = sjmisc::word_wrap(axis.labels, 
-                                                       wrap = wrap.labels))
-  if (!show.legend) 
-    p <- p + guides(colour = "none", shape = "none")
-  if (facet.grid) 
-    p <- p + facet_grid(~group)
-  axis.scaling <- get_axis_limits_and_ticks(axis.lim = axis.lim, 
-                                            min.val = min(ff$conf.low2), max.val = max(ff$conf.high2), 
-                                            grid.breaks = grid.breaks, exponentiate = exponentiate)
-  #if (exponentiate) {
-  #  p <- p + scale_y_continuous(trans = "log10", limits = axis.scaling$axis.lim, 
-  #                              breaks = axis.scaling$ticks, labels = prettyNum)
-  #}
-  #else {
-  #  p <- p + scale_y_continuous(limits = axis.scaling$axis.lim, 
-  #                              breaks = axis.scaling$ticks, 
-  #                              labels = axis.scaling$ticks)
-  p <- p + scale_y_continuous(limits = axis.scaling$axis.lim)
-  #}
- # p <- p + scale_colour_manual(values = col_check2(geom.colors, 
-#                                                   length(m.labels)))
- # p <- p + scale_colour_manual(values = palette(rainbow(18)))
-  if (!is.null(col_mods)) {
-    p <- p + scale_colour_manual(values = c(rep(col_mods[1], 4), 
-                                            col_mods[2], 
-                                            rep(col_mods[1], 2), 
-                                            rep(col_mods[2], 5), 
-                                            rep(col_mods[3], 6)))  
-  } else {
-  p <- p + scale_colour_manual(values = plot_colors)
-  }
-  
-  p <- p + labs(x = NULL, 
-                y = sjmisc::word_wrap(
-                  get_estimate_axis_title(
-                    input_list[[1]], 
-                    axis.title), 
-                  wrap = wrap.title), 
-                title = sjmisc::word_wrap(title, 
-                wrap = wrap.title), 
-                colour = sjmisc::word_wrap(legend.title, 
-                wrap = wrap.legend.title), 
-                shape = sjmisc::word_wrap(legend.pval.title, 
-                wrap = wrap.legend.title))
-  p
-}
-
 ```
 
 
 
 # Regressions
 
-## Null Model
+## Complete Sample
+
+### Null Model
 
 ```{r}
-fit0 <- lmer(gov_trust_high ~ 1 +
+fit0_no <- lmer(gov_trust ~ 1 +
                  (1|cntry), data = combined, weights = weight)
 
-icc(fit0)
+fit0_low <- lmer(gov_trust_low ~ 1 +
+                 (1|cntry), data = combined, weights = weight)
+
+fit0_high <- lmer(gov_trust_high ~ 1 +
+                 (1|cntry), data = combined, weights = weight)
+
+icc(fit0_no)
+icc(fit0_low)
+icc(fit0_high)
 ```
 
 
-## W/O Controls
-
-```{r}
-
-
-delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
-
-multilevels <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i +
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
-  return(result)
-}
-
-multilevels_dem <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i +
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
-  return(result)
-}
-
-multilevels_aut <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i +
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
-  return(result)
-}
-
-mods1 <- names(delibs) %>% 
-  purrr::map(multilevels)
-
-mods2 <- names(delibs) %>% 
-  purrr::map(multilevels_dem)
-
-mods3 <- names(delibs) %>% 
-  purrr::map(multilevels_aut)
-
-listing <- function(...) {
-  rlist::list.flatten(rlist::list.append(...))
-}
-
-#list.flatten(list.append(mods1, mods2, mods3))
-
-anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
-
-plot_models2(listing(mods1, mods2, mods3),
-             thatorder = anorder,
-             col_mods = c("#24C724", "#282BD4", "#F71818"),
-#             plot_colors = c("green","green","green","green","blue","green",
-#                             "green","blue","blue","blue","blue","blue",
-#                             "red","red","red","red","red","red"),
-             exponentiate = F, std.est = "std", 
-             rm.terms = c("sex","income","educ", 
-                           "work", "age", "sex",
-            "afro", "latino", "americas", "asian", "ESS"), 
-            show.values = T, show.p = T,
-            labelv = -0.3, 
-            labelh = -0.9, 
-            labelsize = 3.2,
-            geom.size = 3, geom.spacing = 0.8, 
-            show.legend = F) + 
-            #geom.colors = palette(rainbow(18)) + 
-            theme_economist_white() + 
-            theme(legend.position = "right") 
-
-
-```
-## With Controls
+### W/O Controls
 
 ```{r}
 
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 
-multilevels_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i +
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
-  return(result)
-}
+mods_no <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no, .n = length(delibs)))
 
-multilevels_dem_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i +
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
-  return(result)
-}
+mods_low <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_low, .n = length(delibs)))
 
-multilevels_aut_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i + 
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
-  return(result)
-}
+mods_high <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_high, .n = length(delibs)))
 
-mods1_c <- names(delibs) %>% 
-  purrr::map(multilevels_c)
+rbind(
+mods_no %>% 
+  purrr::map(broom::tidy) %>%
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  na.omit() %>% 
+left_join(mods_no %>% 
+  purrr::map(p_value) %>% 
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows()),
 
-mods2_c <- names(delibs) %>% 
-  purrr::map(multilevels_dem_c)
+mods_low %>% 
+  purrr::map(broom::tidy) %>%
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "low") %>% 
+  na.omit() %>% 
+left_join(mods_low %>% 
+  purrr::map(p_value) %>% 
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows()),
 
-mods3_c <- names(delibs) %>% 
-  purrr::map(multilevels_aut_c)
+mods_high %>% 
+  purrr::map(broom::tidy) %>%
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "high") %>% 
+  na.omit() %>% 
+left_join(mods_high %>% 
+  purrr::map(p_value) %>% 
+  purrr::map(~create_col(., term)) %>% 
+  bind_rows())
+) -> wo_controls
 
-listing <- function(...) {
-  rlist::list.flatten(rlist::list.append(...))
-}
 
-#list.flatten(list.append(mods1, mods2, mods3))
 
-anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
 
-plot_models2(listing(mods1_c, mods2_c, mods3_c),
-             thatorder = anorder,
-             col_mods = c("#24C724", "#282BD4", "#F71818"),
-#             plot_colors = c("green","green","green","green","blue","green",
-#                             "green","blue","blue","blue","blue","blue",
-#                             "red","red","red","red","red","red"),
-             exponentiate = F, std.est = "std", 
-             rm.terms = c("sex","income","educ", 
+
+
+
+wo_controls %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
                            "work", "age", "sex",
             "afro", "latino", "americas", "asian", "ESS",
-            "ethnic10", "pop10"), 
-            show.values = T, show.p = T,
-            labelv = -0.3, 
-            labelh = -0.9, 
-            labelsize = 3.2,
-            geom.size = 3, geom.spacing = 0.8, 
-            show.legend = F) + 
-            #geom.colors = palette(rainbow(18)) + 
-            theme_economist_white() + 
-            theme(legend.position = "right") 
+            "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%    
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1),
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.11,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = .9),
+            show.legend = F) +
+  ggthemes::theme_hc() +
+  ggthemes::scale_colour_gdocs()
+
+
+ggsave(filename = "images/wo_controls.png")
+
+
+# plot_models(listing(mods_no, mods_low, mods_high),
+#              # thatorder = anorder,
+#              # col_mods = c("#24C724", "#282BD4", "#F71818"),
+# #             plot_colors = c("green","green","green","green","blue","green",
+# #                             "green","blue","blue","blue","blue","blue",
+# #                             "red","red","red","red","red","red"),
+#              exponentiate = F, std.est = "std", 
+#              rm.terms = c("sex","income","educ", 
+#                            "work", "age", "sex",
+#             "afro", "latino", "americas", "asian", "ESS"), 
+#             show.values = T, show.p = T,
+#             labelv = -0.3, 
+#             labelh = -0.9, 
+#             labelsize = 3.2,
+#             geom.size = 3, geom.spacing = 0.8, 
+#             show.legend = F) + 
+#             #geom.colors = palette(rainbow(18)) + 
+#             theme_economist_white() + 
+#             theme(legend.position = "right") 
 
 ```
-
-## With Polity Controls
-
-### the right order has to be established
+### With Controls
 
 ```{r}
 
+x_min <- -0.25 
+
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
-
-multilevels_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i + polity_demdummy + polity_autodummy +
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight)
-  return(result)
-}
-
-multilevels_dem_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i + polity10 +
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight)
-  return(result)
-}
-
-multilevels_aut_c <- function(delibs) {
-  result <- lmer(substitute(gov_trust_high ~ income + educ + 
-               work + age + sex + i + polity10 +
-                   ethnic10 + pop10 + #gdp10 + 
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), list(i = as.name(delibs))) , data = combined_aut, weights = weight)
-  return(result)
-}
-
 mods1_c <- names(delibs) %>% 
-  purrr::map(multilevels_c)
+  purrr::map(progressively(multilevels_no_c, length(delibs)))
 
 mods2_c <- names(delibs) %>% 
-  purrr::map(multilevels_dem_c)
+  purrr::map(progressively(multilevels_low_c, length(delibs)))
 
 mods3_c <- names(delibs) %>% 
-  purrr::map(multilevels_aut_c)
+  purrr::map(progressively(multilevels_high_c, length(delibs)))
 
-listing <- function(...) {
-  rlist::list.flatten(rlist::list.append(...))
-}
+# mods1_c_reml <- names(delibs) %>% 
+#   purrr::map(~multilevels_no_c(.x, REML = F))
+# 
+# mods2_c_reml <- names(delibs) %>% 
+#   purrr::map(~multilevels_low_c(.x, REML = F))
+# 
+# mods3_c_reml <- names(delibs) %>% 
+#   purrr::map(~multilevels_high_c(.x, REML = F))
 
-#list.flatten(list.append(mods1, mods2, mods3))
+# prep_reml(mods1_c_reml, bias = "no") %>% 
+#   left_join(with_controls)
 
-anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+rbind(
+  prep_dat(mods1_c, "no"),
+  prep_dat(mods2_c, "low"),
+  prep_dat(mods3_c, "high")
+) -> with_controls
 
-plot_models2(listing(mods1_c, mods2_c, mods3_c),
-             thatorder = anorder,
-             col_mods = c("#24C724", "#282BD4", "#F71818"),
-#             plot_colors = c("green","green","green","green","blue","green",
-#                             "green","blue","blue","blue","blue","blue",
-#                             "red","red","red","red","red","red"),
-             exponentiate = F, std.est = "std", 
-             rm.terms = c("sex","income","educ", 
-                           "work", "age", "sex",
-            "afro", "latino", "americas", "asian", "ESS",
-            "ethnic10", "pop10", 
-            "polity_autodummy", "polity_demdummy", "polity10"), 
-            show.values = T, show.p = T,
-            labelv = -0.3, 
-            labelh = -0.9, 
-            labelsize = 3.2,
-            geom.size = 3, geom.spacing = 0.8, 
-            show.legend = F) + 
-            #geom.colors = palette(rainbow(18)) + 
-            theme_economist_white() + 
-            theme(legend.position = "right") 
+# anova(mods1_c[[1]], mods1_pol[[1]])
 
+
+
+clean_icc_with_controls(with_controls) -> with_controls_icc
+
+# data.frame(unique(with_controls$type))
+
+
+
+with_controls %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>% 
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A1.1 - A1.3",
+    type == "reason10"  ~ "Models B1.1 - B1.3",
+    type == "common10"  ~ "Models C1.1 - C1.3",
+    type == "countr10"  ~ "Models D1.1 - D1.3",
+    type == "consult10" ~ "Models E1.1 - E1.3",
+    type == "engage10"  ~ "Models F1.1 - F1.3"
+  )) -> controls_plot
+
+save(controls_plot, file = "data/controls_plot.Rdata")
+
+
+controls_plot %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1),
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.11,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = .9),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray") +
+  # geom_text(data = with_controls_icc, 
+  #           aes(x = term, 
+  #               y =  0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)", 
+                                          "Regime Support (Low Bias)", 
+                                          "Regime Support (High Bias)")),
+                       values = rev(gdocs_pal()(3))) +
+  scale_y_continuous(breaks = seq(x_min, 0.35, 0.10), 
+                     limits = c(x_min, 0.35), labels =  round(seq(x_min, 0.35, 0.10), 2))  +
+  # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")), 
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            parse=TRUE)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Controlled for Individual and Macro Level Variables") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) + 
+  guides(colour = guide_legend(reverse=T)) -> gg_controls
+
+
+ggsave(gg_controls, filename = "images/gg_controls.png", width = 8, height = 9)
+
+
+```
+
+### With Polity Controls
+
+
+```{r}
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+mods1_pol <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no_pol, length(delibs)))
+
+mods2_pol <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_low_pol, length(delibs)))
+
+mods3_pol <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_high_pol, length(delibs)))
+
+
+
+rbind(
+  prep_dat(mods1_pol, "no"),
+  prep_dat(mods2_pol, "low"),
+  prep_dat(mods3_pol, "high")
+) -> with_pols
+
+with_pols %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%    
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society",
+    term == "polity_demdummy" & type == "delib10" ~   "Democracy (DCI)",
+    term == "polity_autodummy" & type == "delib10" ~  "Autocracy (DCI)",
+    term == "polity_demdummy" & type == "reason10" ~  "Democracy (RJ)",
+    term == "polity_autodummy" & type == "reason10" ~ "Autocracy (RJ)",
+    term == "polity_demdummy" & type == "common10" ~  "Democracy (CG)",
+    term == "polity_autodummy" & type == "common10" ~ "Autocracy (CG)",
+    term == "polity_demdummy" & type == "countr10" ~  "Democracy (CA)",
+    term == "polity_autodummy" & type == "countr10" ~ "Autocracy (CA)",
+    term == "polity_demdummy" & type == "consult10" ~  "Democracy (RoC)",
+    term == "polity_autodummy" & type == "consult10" ~ "Autocracy (RoC)",
+    term == "polity_demdummy" & type == "engage10" ~   "Democracy (ES)",
+    term == "polity_autodummy" & type == "engage10" ~  "Autocracy (ES)"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                      "Autocracy (DCI)",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                      "Autocracy (RJ)",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                      "Autocracy (CG)",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                      "Autocracy (CA)",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                      "Autocracy (RoC)",
+                                           "Engaged Society",
+                                      "Democracy (ES)",
+                                      "Autocracy (ES)"))))  %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A1.4 - A1.6",
+    type == "reason10"  ~ "Models B1.4 - B1.6",
+    type == "common10"  ~ "Models C1.4 - C1.6",
+    type == "countr10"  ~ "Models D1.4 - D1.6",
+    type == "consult10" ~ "Models E1.4 - E1.6",
+    type == "engage10"  ~ "Models F1.4 - F1.6"
+  )) -> with_pols_dat
+
+save(with_pols_dat, file = "data/with_pols_dat.Rdata")
+
+
+clean_icc_with_pols(with_pols) -> with_pols_icc
+
+with_pols_dat %>% 
+  filter(term %in% c("Democracy (DCI)",
+                     "Autocracy (DCI)",
+                     "Democracy (RJ)",
+                     "Autocracy (RJ)",
+                     "Democracy (CG)",
+                     "Autocracy (CG)",
+                     "Democracy (CA)",
+                     "Autocracy (CA)",
+                     "Democracy (RoC)",
+                     "Autocracy (RoC)",
+                     "Democracy (ES)",
+                     "Autocracy (ES)")) -> with_pols_dat_regime
+
+with_pols_dat %>% 
+  filter(term %nin% c("Democracy (DCI)",
+                     "Autocracy (DCI)",
+                     "Democracy (RJ)",
+                     "Autocracy (RJ)",
+                     "Democracy (CG)",
+                     "Autocracy (CG)",
+                     "Democracy (CA)",
+                     "Autocracy (CA)",
+                     "Democracy (RoC)",
+                     "Autocracy (RoC)",
+                     "Democracy (ES)",
+                     "Autocracy (ES)")) -> with_pols_dat_delibs
+
+# library(scales)
+# show_col(gdocs_pal()(3))
+
+
+with_pols_dat %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(data = with_pols_dat_delibs, aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_delibs, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  geom_linerange(data = with_pols_dat_regime, aes(x = term,
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), size = 0.6,
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_regime, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2), size = 0.6,
+                      lwd = 1/2, position = position_dodge(width = 0.7),  shape = 20, fatten = 0.8) +
+  coord_flip() +
+  geom_text(data = with_pols_dat_delibs, aes(x = term, 
+                y = estimate + 0.17,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1),
+            show.legend = F) +
+  geom_text(data = with_pols_dat_regime, aes(x = term, 
+                y = estimate + 0.12,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1), size = 3.2,
+            show.legend = F) +
+  geom_text(data = with_pols_dat_delibs, aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+  # ggrepel::geom_text_repel(data = anovies_pols,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = report),
+  #           segment.alpha = 0,
+  #           nudge_x = -2.5,
+  #           direction = "x",
+  #           show.legend = F, parse = T, size = 2.7) +
+  #  ggrepel::geom_text_repel(data = anovies_pols,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = anovie_stars),
+  #           segment.color = NULL,
+  #           segment.alpha = 0,
+  #           nudge_x = -1.5,
+  #           direction = "x",
+  #           show.legend = F, parse = F, size = 2.7) +
+  # geom_text(data = with_pols_icc, 
+  #           aes(x = term, 
+  #               y =  -0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual(values = rev(gdocs_pal()(3))) +
+  ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                      "Autocracy (DCI)",
+                                  "skip",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                      "Autocracy (RJ)",
+                                  "skip",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                      "Autocracy (CG)",
+                                  "skip",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                      "Autocracy (CA)",
+                                  "skip",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                      "Autocracy (RoC)",
+                                  "skip",
+                                           "Engaged Society",
+                                      "Democracy (ES)",
+                                      "Autocracy (ES)")),
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            "Democracy (DCI)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (DCI)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            "Democracy (RJ)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (RJ)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            "Democracy (CG)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (CG)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            "Democracy (CA)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (CA)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            "Democracy (RoC)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (RoC)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            "Democracy (ES)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (ES)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            parse=TRUE), expand = c(0, 1.1)) +
+  scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
+                     limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Individual and Macro Level Controls + Polity/FH Dummies") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) -> gg_pols
+
+
+ggsave(gg_pols, filename = "images/gg_pols.png", width = 8, height = 9)
+
+
+```
+
+#### merging
+
+```{r}
+legend_b <- cowplot::get_legend(gg_controls + theme(legend.direction = "horizontal",
+                                                   legend.justification="center",
+                                                   legend.box.just = "bottom"))
+
+# cowplot::plot_grid(gg_controls  + theme(legend.position="none"),
+#                    gg_pols + theme(legend.position="none"))
+
+
+# ggsave(filename = "images/coefplot.png", width = 18, height = 7)
+
+library(gridExtra)
+
+grid.arrange(gg_controls  + theme(legend.position="none"),
+                   gg_pols + theme(legend.position="none"), legend_b, ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)),
+             widths = c(2.7, 2.7), heights = c(2.5, 0.2)) -> coefplot
+
+ggsave(coefplot, filename = "images/coefplot.png", width = 18, height = 10)
+
+```
+
+### cite it
+
+```{r}
+load("data/controls_plot.Rdata")
+
+
+controls_plot %>% 
+  arrange(model, desc(bias)) %>% 
+  mutate(model = case_when(
+             type == "delib10"   & bias == "no"   ~ "Models A1.1",
+             type == "delib10"   & bias == "low"  ~ "Models A1.2",
+             type == "delib10"   & bias == "high" ~ "Models A1.3",
+             type == "reason10"  & bias == "no"   ~ "Models B1.1", 
+             type == "reason10"  & bias == "low"  ~ "Models B1.2",
+             type == "reason10"  & bias == "high" ~ "Models B1.3",
+             type == "common10"  & bias == "no"   ~ "Models C1.1",
+             type == "common10"  & bias == "low"  ~ "Models C1.2", 
+             type == "common10"  & bias == "high" ~ "Models C1.3",
+             type == "countr10"  & bias == "no"   ~ "Models D1.1",
+             type == "countr10"  & bias == "low"  ~ "Models D1.2",
+             type == "countr10"  & bias == "high" ~ "Models D1.3", 
+             type == "consult10" & bias == "no"   ~ "Models E1.1",
+             type == "consult10" & bias == "low"  ~ "Models E1.2",
+             type == "consult10" & bias == "high" ~ "Models E1.3",
+             type == "engage10"  & bias == "no"   ~ "Models F1.1",  
+             type == "engage10"  & bias == "low"  ~ "Models F1.2",
+             type == "engage10"  & bias == "high" ~ "Models F1.3"
+           ))
+
+
+controls_plot %>% 
+  arrange(model) %>% select(type)
 ```
 
 
 
+
+## Democracy Sample
+
+### Null Model
+
+```{r}
+fit0_no <- lmer(gov_trust ~ 1 +
+                 (1|cntry), data = combined_dem, weights = weight)
+
+fit0_low <- lmer(gov_trust_low ~ 1 +
+                 (1|cntry), data = combined_dem, weights = weight)
+
+fit0_high <- lmer(gov_trust_high ~ 1 +
+                 (1|cntry), data = combined_dem, weights = weight)
+
+icc(fit0_no)
+icc(fit0_low)
+icc(fit0_high)
+```
+
+
+### W/O Controls
+
+```{r}
+
+# delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+# 
+# 
+# mods_no_dem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_no_dem, .n = length(delibs)))
+# 
+# mods_low_dem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_low_dem, .n = length(delibs)))
+# 
+# mods_high_dem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_high_dem, .n = length(delibs)))
+# 
+# rbind(
+# mods_no_dem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "no") %>% 
+#   na.omit() %>% 
+# left_join(mods_no_dem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows()),
+# 
+# mods_low_dem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "low") %>% 
+#   na.omit() %>% 
+# left_join(mods_low_dem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows()),
+# 
+# mods_high_dem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "high") %>% 
+#   na.omit() %>% 
+# left_join(mods_high_dem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows())
+# ) -> wo_controls_dem
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# wo_controls_dem %>% 
+#   janitor::clean_names() %>% 
+#   mutate(stars = get_p_values(p_value)) %>% 
+#   filter(term %nin% c("sex","income","educ", 
+#                            "work", "age", "sex",
+#             "afro", "latino", "americas", "asian", "ESS",
+#             "(Intercept)")) %>% 
+#   mutate(term_cite = term) %>%    mutate(term = case_when(
+#     term == "delib10" ~ "Deliberation Component Index",
+#     term == "reason10" ~ "Reasoned Justification",
+#     term == "common10" ~ "Common Good",
+#     term == "countr10" ~ "Counter-Arguments",
+#     term == "consult10" ~ "Range of Consultation",
+#     term == "engage10" ~ "Engaged Society"
+#   )) %>% 
+#   mutate(term = factor(term, 
+#                        levels = rev(c("Deliberation Component Index",
+#                                            "Reasoned Justification",
+#                                            "Common Good",
+#                                            "Counter-Arguments",
+#                                            "Range of Consultation",
+#                                            "Engaged Society")))) %>% 
+#  ggplot() + 
+#   aes(x = term, y = estimate, color = bias) + 
+#   geom_hline(yintercept = 0, 
+#              color = "gray25", 
+#              linetype = "dotted") + 
+#   geom_linerange(aes(x = term, 
+#                      ymin = estimate - std_error*interval1,
+#                      ymax = estimate + std_error*interval1),
+#                      lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+#   geom_pointrange(aes(x = term, 
+#                       y = estimate, ymin = estimate - std_error*interval2,
+#                       ymax = estimate + std_error*interval2),
+#                       lwd = 1/2, position = position_dodge(width = 0.7),
+#                   shape = 20, fill = "white") +
+#   coord_flip() +
+#   geom_text(aes(x = term, 
+#                 y = estimate + 0.11,
+#                 label = paste(sprintf('%.2f', estimate, 2), stars)), 
+#                 position = position_dodge(width = .9),
+#             show.legend = F) +
+#   ggthemes::theme_hc() +
+#   ggthemes::scale_colour_gdocs()
+# 
+# 
+# ggsave(filename = "images/wo_controls_dem.png")
+
+
+# plot_models(listing(mods_no, mods_low, mods_high),
+#              # thatorder = anorder,
+#              # col_mods = c("#24C724", "#282BD4", "#F71818"),
+# #             plot_colors = c("green","green","green","green","blue","green",
+# #                             "green","blue","blue","blue","blue","blue",
+# #                             "red","red","red","red","red","red"),
+#              exponentiate = F, std.est = "std", 
+#              rm.terms = c("sex","income","educ", 
+#                            "work", "age", "sex",
+#             "afro", "latino", "americas", "asian", "ESS"), 
+#             show.values = T, show.p = T,
+#             labelv = -0.3, 
+#             labelh = -0.9, 
+#             labelsize = 3.2,
+#             geom.size = 3, geom.spacing = 0.8, 
+#             show.legend = F) + 
+#             #geom.colors = palette(rainbow(18)) + 
+#             theme_economist_white() + 
+#             theme(legend.position = "right") 
+
+```
+
+
+### With Controls
+
+```{r}
+
+x_min <- -0.25 
+
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+mods1_c_dem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no_c_dem, length(delibs)))
+
+prep_dat(mods1_c_dem, "no") -> with_controls_dem
+
+# anova(mods1_c[[1]], mods1_pol[[1]])
+
+
+
+# clean_icc_with_controls(with_controls) -> with_controls_icc
+
+# data.frame(unique(with_controls$type))
+
+
+with_controls_dem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%  
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A2.1",
+    type == "reason10"  ~ "Models B2.1",
+    type == "common10"  ~ "Models C2.1",
+    type == "countr10"  ~ "Models D2.1",
+    type == "consult10" ~ "Models E2.1",
+    type == "engage10"  ~ "Models F2.1"
+  )) -> controls_plot_dem
+
+save(controls_plot_dem, file = "data/controls_plot_dem.Rdata")
+
+
+controls_plot_dem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1),
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.15,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = .9),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.25, size = 2.5, color = "gray") +
+  # geom_text(data = with_controls_icc, 
+  #           aes(x = term, 
+  #               y =  0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  ggthemes::scale_color_gdocs("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)"))) +
+  scale_y_continuous(breaks = seq(x_min, 0.45, 0.10), 
+                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.10), 2))  +
+  # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")), 
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            parse=TRUE)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Controlled for Individual and Macro Level Variables") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) + 
+  guides(colour = guide_legend(reverse=T)) -> gg_controls_dem
+
+
+ggsave(gg_controls_dem, filename = "images/gg_controls_dem.png", width = 8, height = 9)
+
+
+```
+
+
+### With Polity Controls
+
+```{r}
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+mods1_pol_dem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no_pol_dem, length(delibs)))
+
+
+
+rbind(
+  prep_dat(mods1_pol_dem, "no")
+) -> with_pols_dem
+
+with_pols_dem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%    
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society",
+    term == "polity10" & type == "delib10" ~   "Democracy (DCI)",
+    term == "polity10" & type == "reason10" ~  "Democracy (RJ)",
+    term == "polity10" & type == "common10" ~  "Democracy (CG)",
+    term == "polity10" & type == "countr10" ~  "Democracy (CA)",
+    term == "polity10" & type == "consult10" ~  "Democracy (RoC)",
+    term == "polity10" & type == "engage10" ~   "Democracy (ES)"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                           "Engaged Society",
+                                      "Democracy (ES)"))))  %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A2.2",
+    type == "reason10"  ~ "Models B2.2",
+    type == "common10"  ~ "Models C2.2",
+    type == "countr10"  ~ "Models D2.2",
+    type == "consult10" ~ "Models E2.2",
+    type == "engage10"  ~ "Models F2.2"
+  )) -> with_pols_dat_dem
+
+
+
+save(with_pols_dat_dem, file = "data/with_pols_dat_dem.Rdata")
+
+
+# clean_icc_with_pols(with_pols) -> with_pols_icc
+
+with_pols_dat_dem %>% 
+  filter(term %in% c("Democracy (DCI)",
+                     "Democracy (RJ)",
+                     "Democracy (CG)",
+                     "Democracy (CA)",
+                     "Democracy (RoC)",
+                     "Democracy (ES)")) -> with_pols_dat_regime_dem
+
+with_pols_dat_dem %>% 
+  filter(term %nin% c("Democracy (DCI)",
+                     "Democracy (RJ)",
+                     "Democracy (CG)",
+                     "Democracy (CA)",
+                     "Democracy (RoC)",
+                     "Democracy (ES)")) -> with_pols_dat_delibs_dem
+
+# library(scales)
+# show_col(gdocs_pal()(3))
+
+
+with_pols_dat_dem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(data = with_pols_dat_delibs_dem, aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_delibs_dem, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  geom_linerange(data = with_pols_dat_regime_dem, aes(x = term,
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), size = 0.6,
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_regime_dem, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2), size = 0.6,
+                      lwd = 1/2, position = position_dodge(width = 0.7),  shape = 20, fatten = 0.8) +
+  coord_flip() +
+  geom_text(data = with_pols_dat_delibs_dem, aes(x = term, 
+                y = estimate + 0.14,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1),
+            show.legend = F) +
+  geom_text(data = with_pols_dat_regime_dem, aes(x = term, 
+                y = estimate + 0.12,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1), size = 3.2,
+            show.legend = F) +
+  geom_text(data = with_pols_dat_delibs_dem, aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+  # ggrepel::geom_text_repel(data = anovies_pols_dem,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = report),
+  #           segment.alpha = 0,
+  #           nudge_x = -1.4,
+  #           direction = "x",
+  #           show.legend = F, parse = T, size = 2.7) +
+  #  ggrepel::geom_text_repel(data = anovies_pols_dem,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = anovie_stars),
+  #           segment.color = NULL,
+  #           segment.alpha = 0,
+  #           nudge_x = -0.4,
+  #           direction = "x",
+  #           show.legend = F, parse = F, size = 2.7) +
+  # geom_text(data = with_pols_icc, 
+  #           aes(x = term, 
+  #               y =  -0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  ggthemes::scale_colour_gdocs() +
+  # scale_color_manual(values = rev(gdocs_pal()(3))) +
+  ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                  "skip",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                  "skip",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                  "skip",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                  "skip",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                  "skip",
+                                           "Engaged Society",
+                                      "Democracy (ES)")),
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            "Democracy (DCI)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (RJ)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (CG)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (CA)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (RoC)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (ES)"=expression(displaystyle(italic(Polity/FH))), 
+                            parse=TRUE), expand = c(0, 1.1)) +
+  scale_y_continuous(breaks = seq(x_min, 0.45, 0.1), 
+                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Individual and Macro Level Controls + Polity/FH") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) -> gg_pols_dem
+
+
+ggsave(gg_pols_dem, filename = "images/gg_pols_dem.png", width = 8, height = 9)
+
+
+```
+
+#### Merging
+
+```{r}
+legend_b_dem <- cowplot::get_legend(gg_controls_dem + theme(legend.direction = "horizontal",
+                                                   legend.justification="center",
+                                                   legend.box.just = "bottom"))
+
+# cowplot::plot_grid(gg_controls  + theme(legend.position="none"),
+#                    gg_pols + theme(legend.position="none"))
+
+
+# ggsave(filename = "images/coefplot.png", width = 18, height = 7)
+
+library(gridExtra)
+
+grid.arrange(gg_controls_dem  + theme(legend.position="none"),
+                   gg_pols_dem + theme(legend.position="none"), legend_b_dem, ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)),
+             widths = c(2.7, 2.7), heights = c(2.5, 0.2)) -> coefplot_dem
+
+ggsave(coefplot_dem, filename = "images/coefplot_dem.png", width = 18, height = 10)
+
+```
+
+## Non-Democracy Sample
+
+### Null Model
+
+```{r}
+fit0_no <- lmer(gov_trust ~ 1 +
+                 (1|cntry), data = combined_nondem, weights = weight)
+
+fit0_low <- lmer(gov_trust_low ~ 1 +
+                 (1|cntry), data = combined_nondem, weights = weight)
+
+fit0_high <- lmer(gov_trust_high ~ 1 +
+                 (1|cntry), data = combined_nondem, weights = weight)
+
+icc(fit0_no)
+icc(fit0_low)
+icc(fit0_high)
+```
+
+
+### W/O Controls
+
+```{r}
+
+# delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+# 
+# 
+# mods_no_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_no_nondem, .n = length(delibs)))
+# 
+# mods_low_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_low_nondem, .n = length(delibs)))
+# 
+# mods_high_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_high_nondem, .n = length(delibs)))
+# 
+# rbind(
+# mods_no_nondem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "no") %>% 
+#   na.omit() %>% 
+# left_join(mods_no_nondem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows()),
+# 
+# mods_low_nondem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "low") %>% 
+#   na.omit() %>% 
+# left_join(mods_low_nondem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows()),
+# 
+# mods_high_nondem %>% 
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows() %>% 
+#   mutate(bias = "high") %>% 
+#   na.omit() %>% 
+# left_join(mods_high_nondem %>% 
+#   purrr::map(p_value) %>% 
+#   purrr::map(~create_col(., term)) %>% 
+#   bind_rows())
+# ) -> wo_controls_nondem
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# wo_controls_nondem %>% 
+#   janitor::clean_names() %>% 
+#   mutate(stars = get_p_values(p_value)) %>% 
+#   filter(term %nin% c("sex","income","educ", 
+#                            "work", "age", "sex",
+#             "afro", "latino", "americas", "asian", "ESS",
+#             "(Intercept)")) %>% 
+#   mutate(term_cite = term) %>%    mutate(term = case_when(
+#     term == "delib10" ~ "Deliberation Component Index",
+#     term == "reason10" ~ "Reasoned Justification",
+#     term == "common10" ~ "Common Good",
+#     term == "countr10" ~ "Counter-Arguments",
+#     term == "consult10" ~ "Range of Consultation",
+#     term == "engage10" ~ "Engaged Society"
+#   )) %>% 
+#   mutate(term = factor(term, 
+#                        levels = rev(c("Deliberation Component Index",
+#                                            "Reasoned Justification",
+#                                            "Common Good",
+#                                            "Counter-Arguments",
+#                                            "Range of Consultation",
+#                                            "Engaged Society")))) %>% 
+#  ggplot() + 
+#   aes(x = term, y = estimate, color = bias) + 
+#   geom_hline(yintercept = 0, 
+#              color = "gray25", 
+#              linetype = "dotted") + 
+#   geom_linerange(aes(x = term, 
+#                      ymin = estimate - std_error*interval1,
+#                      ymax = estimate + std_error*interval1),
+#                      lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+#   geom_pointrange(aes(x = term, 
+#                       y = estimate, ymin = estimate - std_error*interval2,
+#                       ymax = estimate + std_error*interval2),
+#                       lwd = 1/2, position = position_dodge(width = 0.7),
+#                   shape = 20, fill = "white") +
+#   coord_flip() +
+#   geom_text(aes(x = term, 
+#                 y = estimate + 0.11,
+#                 label = paste(sprintf('%.2f', estimate, 2), stars)), 
+#                 position = position_dodge(width = .9),
+#             show.legend = F) +
+#   ggthemes::theme_hc() +
+#   ggthemes::scale_colour_gdocs()
+# 
+# 
+# ggsave(filename = "images/wo_controls_nondem.png")
+# 
+
+# plot_models(listing(mods_no, mods_low, mods_high),
+#              # thatorder = anorder,
+#              # col_mods = c("#24C724", "#282BD4", "#F71818"),
+# #             plot_colors = c("green","green","green","green","blue","green",
+# #                             "green","blue","blue","blue","blue","blue",
+# #                             "red","red","red","red","red","red"),
+#              exponentiate = F, std.est = "std", 
+#              rm.terms = c("sex","income","educ", 
+#                            "work", "age", "sex",
+#             "afro", "latino", "americas", "asian", "ESS"), 
+#             show.values = T, show.p = T,
+#             labelv = -0.3, 
+#             labelh = -0.9, 
+#             labelsize = 3.2,
+#             geom.size = 3, geom.spacing = 0.8, 
+#             show.legend = F) + 
+#             #geom.colors = palette(rainbow(18)) + 
+#             theme_economist_white() + 
+#             theme(legend.position = "right") 
+
+```
+
+
+### With Controls
+
+```{r}
+
+x_min <- -0.35 
+
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+mods1_c_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no_c_nondem, length(delibs)))
+
+mods2_c_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_low_c_nondem, length(delibs)))
+
+mods3_c_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_high_c_nondem, length(delibs)))
+
+rbind(prep_dat(mods1_c_nondem, "no"),
+prep_dat(mods2_c_nondem, "low"),
+prep_dat(mods3_c_nondem, "high")) -> with_controls_nondem
+
+# anova(mods1_c[[1]], mods1_pol[[1]])
+
+
+
+# clean_icc_with_controls(with_controls) -> with_controls_icc
+
+# data.frame(unique(with_controls$type))
+
+
+with_controls_nondem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%    
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A3.1 - A3.3",
+    type == "reason10"  ~ "Models B3.1 - B3.3",
+    type == "common10"  ~ "Models C3.1 - C3.3",
+    type == "countr10"  ~ "Models D3.1 - D3.3",
+    type == "consult10" ~ "Models E3.1 - E3.3",
+    type == "engage10"  ~ "Models F3.1 - F3.3"
+  )) -> controls_plot_nondem
+
+save(controls_plot_nondem, file = "data/controls_plot_nondem.Rdata")
+
+
+controls_plot_nondem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1),
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.18,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = .9),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.32,
+                label = model),
+            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray") +
+  # geom_text(data = with_controls_icc, 
+  #           aes(x = term, 
+  #               y =  0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)", 
+                                          "Regime Support (Low Bias)", 
+                                          "Regime Support (High Bias)")),
+                       values = rev(gdocs_pal()(3))) +
+  scale_y_continuous(breaks = seq(x_min, 0.35, 0.10), 
+                     limits = c(x_min, 0.35), labels =  round(seq(x_min, 0.35, 0.10), 2))  +
+  # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")), 
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            parse=TRUE)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Controlled for Individual and Macro Level Variables") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) + 
+  guides(colour = guide_legend(reverse=T)) -> gg_controls_nondem
+
+
+ggsave(gg_controls_nondem, filename = "images/gg_controls_nondem.png", width = 8, height = 9)
+
+
+```
+
+
+### With Polity Controls
+
+```{r}
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+mods1_pol_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_no_pol_nondem, length(delibs)))
+
+mods2_pol_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_low_pol_nondem, length(delibs)))
+
+mods3_pol_nondem <- names(delibs) %>% 
+  purrr::map(progressively(multilevels_high_pol_nondem, length(delibs)))
+
+
+rbind(
+  prep_dat(mods1_pol_nondem, "no"),
+  prep_dat(mods2_pol_nondem, "low"),
+  prep_dat(mods3_pol_nondem, "high")
+) -> with_pols_nondem
+
+with_pols_nondem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%  
+  mutate(term = case_when(
+    term == "delib10" ~ "Deliberation Component Index",
+    term == "reason10" ~ "Reasoned Justification",
+    term == "common10" ~ "Common Good",
+    term == "countr10" ~ "Counter-Arguments",
+    term == "consult10" ~ "Range of Consultation",
+    term == "engage10" ~ "Engaged Society",
+    term == "polity10" & type == "delib10" ~   "Democracy (DCI)",
+    term == "polity10" & type == "reason10" ~  "Democracy (RJ)",
+    term == "polity10" & type == "common10" ~  "Democracy (CG)",
+    term == "polity10" & type == "countr10" ~  "Democracy (CA)",
+    term == "polity10" & type == "consult10" ~  "Democracy (RoC)",
+    term == "polity10" & type == "engage10" ~   "Democracy (ES)"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                           "Engaged Society",
+                                      "Democracy (ES)"))))  %>% 
+  mutate(model = 
+           case_when(
+    type == "delib10"   ~ "Models A3.4 - A3.6",
+    type == "reason10"  ~ "Models B3.4 - B3.6",
+    type == "common10"  ~ "Models C3.4 - C3.6",
+    type == "countr10"  ~ "Models D3.4 - D3.6",
+    type == "consult10" ~ "Models E3.4 - E3.6",
+    type == "engage10"  ~ "Models F3.4 - F3.6"
+  )) -> with_pols_dat_nondem
+
+save(with_pols_dat_nondem, file = "data/with_pols_dat_nondem.Rdata")
+
+
+rbind(
+1:6 %>% 
+  purrr::map(~get_anovies(mods1_c_nondem, mods1_pol_nondem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")),
+1:6 %>% 
+  purrr::map(~get_anovies(mods2_c_nondem, mods2_pol_nondem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "low") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")),
+1:6 %>% 
+  purrr::map(~get_anovies(mods3_c_nondem, mods3_pol_nondem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "high") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10"))
+)  -> anovies_pols_original_nondem
+
+
+
+
+
+# clean_icc_with_pols(with_pols) -> with_pols_icc
+
+with_pols_dat_nondem %>% 
+  filter(term %in% c("Democracy (DCI)",
+                     "Democracy (RJ)",
+                     "Democracy (CG)",
+                     "Democracy (CA)",
+                     "Democracy (RoC)",
+                     "Democracy (ES)")) -> with_pols_dat_regime_nondem
+
+with_pols_dat_nondem %>% 
+  filter(term %nin% c("Democracy (DCI)",
+                     "Democracy (RJ)",
+                     "Democracy (CG)",
+                     "Democracy (CA)",
+                     "Democracy (RoC)",
+                     "Democracy (ES)")) -> with_pols_dat_delibs_nondem
+
+
+anovies_pols_original_nondem %>% 
+  mutate(anovie_stars = stars) %>% 
+  select(-stars) %>% 
+  left_join(with_pols_dat_delibs_nondem) %>% 
+  mutate(report =  paste0("chi^2*", report)) -> anovies_pols_nondem
+
+# library(scales)
+# show_col(gdocs_pal()(3))
+
+
+with_pols_dat_nondem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(data = with_pols_dat_delibs_nondem, aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_delibs_nondem, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  geom_linerange(data = with_pols_dat_regime_nondem, aes(x = term,
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), size = 0.6,
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_regime_nondem, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2), size = 0.6,
+                      lwd = 1/2, position = position_dodge(width = 0.7),  shape = 20, fatten = 0.8) +
+  coord_flip() +
+  geom_text(data = with_pols_dat_delibs_nondem, aes(x = term, 
+                y = estimate + 0.21,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1),
+            show.legend = F) +
+  geom_text(data = with_pols_dat_regime_nondem, aes(x = term, 
+                y = estimate + 0.19,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1), size = 3.2,
+            show.legend = F) +
+  geom_text(data = with_pols_dat_delibs_nondem, aes(x = term,
+                y =  -.32,
+                label = model),
+            show.legend = F, nudge_x = 0.69, size = 2.5, color = "gray") +
+  # ggrepel::geom_text_repel(data = anovies_pols_nondem,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = report),
+  #           segment.alpha = 0,
+  #           nudge_x = -1.5,
+  #           direction = "x",
+  #           show.legend = F, parse = T, size = 2.7) +
+  #  ggrepel::geom_text_repel(data = anovies_pols_nondem,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = anovie_stars),
+  #           segment.color = NULL,
+  #           segment.alpha = 0,
+  #           nudge_x = -1.8,
+  #           direction = "x",
+  #           show.legend = F, parse = F, size = 2.7) +
+  # geom_text(data = with_pols_icc, 
+  #           aes(x = term, 
+  #               y =  -0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual(values = rev(gdocs_pal()(3))) +
+  ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                  "skip",
+                                           "Reasoned Justification",
+                                      "Democracy (RJ)",
+                                  "skip",
+                                           "Common Good",
+                                      "Democracy (CG)",
+                                  "skip",
+                                           "Counter-Arguments",
+                                      "Democracy (CA)",
+                                  "skip",
+                                           "Range of Consultation",
+                                      "Democracy (RoC)",
+                                  "skip",
+                                           "Engaged Society",
+                                      "Democracy (ES)")),
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))), 
+                            "Reasoned Justification"=expression(displaystyle(bold(Reasoned~~Justification))),
+                            "Common Good"=expression(displaystyle(bold(Common~~Good))), 
+                            "Counter-Arguments"=expression(displaystyle(bold(Counter-Arguments))),
+                            "Range of Consultation"=expression(displaystyle(bold(Range~~of~~Consultation))), 
+                            "Engaged Society"=expression(displaystyle(bold(Engaged~~Society))),
+                            "Democracy (DCI)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (RJ)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (CG)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (CA)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (RoC)"=expression(displaystyle(italic(Polity/FH))), 
+                            "Democracy (ES)"=expression(displaystyle(italic(Polity/FH))), 
+                            parse=TRUE), expand = c(0, 1.1)) +
+  scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
+                     limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Individual and Macro Level Controls + Polity/FH") + 
+  theme(plot.title = element_text(size=14, face="bold.italic")) -> gg_pols_nondem
+
+
+ggsave(gg_pols_nondem, filename = "images/gg_pols_nondem.png", width = 8, height = 9)
+
+
+```
+
+#### Merging
+
+```{r}
+legend_b_nondem <- cowplot::get_legend(gg_controls_nondem + theme(legend.direction = "horizontal",
+                                                   legend.justification="center",
+                                                   legend.box.just = "bottom"))
+
+# cowplot::plot_grid(gg_controls  + theme(legend.position="none"),
+#                    gg_pols + theme(legend.position="none"))
+
+
+# ggsave(filename = "images/coefplot.png", width = 18, height = 7)
+
+library(gridExtra)
+
+grid.arrange(gg_controls_nondem  + theme(legend.position="none"),
+                   gg_pols_nondem + theme(legend.position="none"), 
+             legend_b_nondem, ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)),
+             widths = c(2.7, 2.7), heights = c(2.5, 0.2)) -> coefplot_nondem
+
+ggsave(coefplot_nondem, filename = "images/coefplot_nondem.png", width = 18, height = 10)
+
+```
+
+### Tables
+
+```{r}
+library(texreg)
+
+anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+screenreg(list(mods1_pol_nondem, mods2_pol_nondem, mods3_pol_nondem) %>% unlist,
+          label = "mods1_pol_nondem",
+          caption = "Bolded coefficients, custom notes, three digits.",
+          float.pos = "h", bold = 0.05, stars = 0,
+          custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
+          digits = 2, leading.zero = FALSE)
+
+
+texreg(list(mods1_pol_nondem[[1]], mods2_pol_nondem[[1]], mods3_pol_nondem[[1]],
+               mods1_pol_nondem[[3]], mods2_pol_nondem[[3]], mods3_pol_nondem[[3]],
+               mods1_pol_nondem[[4]], mods2_pol_nondem[[4]], mods3_pol_nondem[[4]],
+               mods1_pol_nondem[[5]], mods2_pol_nondem[[5]], mods3_pol_nondem[[5]],
+               mods1_pol_nondem[[2]], mods2_pol_nondem[[2]], mods3_pol_nondem[[2]],
+               mods1_pol_nondem[[6]], mods2_pol_nondem[[6]], mods3_pol_nondem[[6]]) %>% unlist,
+          label = "mods1_pol_nondem",
+          caption = "Bolded coefficients, custom notes, three digits.",
+          float.pos = "h", bold = 0.10, 
+          custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
+          digits = 2, leading.zero = FALSE, stars = c(0.001, 0.01, 0.05, 0.1),
+          symbol = "^\\dagger", reorder.coef = c(1:6, 9:13, 8, 14:18, 7, 19:23),
+          groups = list("\\textbf{Individual-Level Control Variables}" = 2:6, 
+                        "\\textbf{Country-Level Control Variables}" = 7:11,
+                        "\\textbf{Dataset Control Dummies}" = 12:16,
+                        "\\textbf{DCI \\& Subcomponents}" = 17:23), 
+          custom.coef.names =  c("Intercept",
+                                 "Financial Security",
+                                 "Education",
+                                 "Employment (0/1)",
+                                 "Age",
+                                 "Sex (Male/Female)",
+                                 "logged Population",
+                                 "logged GDP per capita",
+                                 "Life Expectancy",
+                                 "Corruption",
+                                 "Urban Pop. Ratio",
+                                 "Polity/FH",
+                                 "Afrobarometer (0/1)",
+                                 "Latinobarometro (0/1)",
+                                 "Americasbarometer (0/1)",
+                                 "Asianbarometer (0/1)",
+                                 "ESS (0/1)",
+                                 "DCI",
+                                 "Reasoned Justification",
+                                 "Common Good",
+                                 "Counter-Arguments",
+                                 "Range of Consultation",
+                                 "Engaged Society"))
+
+
+
+screenreg(mods1_pol_nondem[[1]] ,reorder.coef = c(1:6, 9:13, 8, 14:18, 7)), 
+          custom.coef.names =  c("Intercept",
+                                 "Education",
+                                 "Employment (0/1)",
+                                 "Age",
+                                 "Sex (Male/Female)",
+                                 "logged Population",
+                                 "logged GDP per capita",
+                                 "Life Expectancy",
+                                 "Corruption",
+                                 "Urban Pop. Ratio",
+                                 "Polity/FH",
+                                 "Afrobarometer (0/1)",
+                                 "Latinobarometro (0/1)",
+                                 "Americasbarometer (0/1)",
+                                 "Asianbarometer (0/1)",
+                                 "ESS (0/1)",
+                                 "DCI"))
+```
+
+
+
+# oNly Polity
+
+## complete sample
+
+```{r}
+list(
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + polity_demdummy + polity_autodummy +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_low ~ income + educ + 
+                              work + age + sex + polity_demdummy + polity_autodummy +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_high ~ income + educ + 
+                              work + age + sex + polity_demdummy + polity_autodummy +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight)
+) -> polity_complete
+
+
+
+polity_complete %>% 
+   purrr::map(broom::tidy) %>% 
+   bind_rows() %>% 
+    left_join(polity_complete %>% 
+                purrr::map(p_value) %>% 
+                bind_rows()) %>% 
+  mutate(bias = c(rep("no", 20), rep("low", 20), rep("high", 20))) %>% 
+  na.omit() -> just_pols
+
+
+just_pols %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%    
+  mutate(term = case_when(
+    term == "polity_demdummy" ~   "Democracy (0/1)",
+    term == "polity_autodummy" ~  "Autocracy (0/1)"
+  )) %>% 
+  mutate(term = factor(term, 
+                       levels = rev(c("Democracy (0/1)",
+                                      "Autocracy (0/1)"))))  %>% 
+  mutate(model =  "Models P1.1 - P1.3") -> just_pols_dat
+
+save(just_pols_dat, file = "data/just_pols_dat.Rdata")
+
+
+just_pols_dat %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.09,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 0.8),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.05,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)", 
+                                          "Regime Support (Low Bias)", 
+                                          "Regime Support (High Bias)")),
+                       values = rev(gdocs_pal()(3))) +
+  # ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Democracy (0/1)",
+                                  "Autocracy (0/1)"
+                                 )),
+                   labels = c("Democracy (0/1)"=expression(displaystyle(bold(Democracy (0/1)))), 
+                            "Autocracy (0/1)"=expression(displaystyle(bold(Autocracy (0/1)))),
+                            parse=TRUE)) +
+  # scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
+  #                    limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Complete Sample") + 
+  theme(plot.title = element_text(size=14, face="bold.italic"))  + 
+  guides(colour = guide_legend(reverse = T)) +
+  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols
+
+
+ggsave(gg_just_pols, filename = "images/gg_just_pols.png", width = 8, height = 9)
+
+
+
+```
+
+## demsample
+
+```{r}
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + polity10 +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined_dem, weights = weight) -> polity_dem
+
+
+polity_dem %>% 
+   broom::tidy() %>% 
+    left_join(polity_dem %>% 
+                p_value()) %>% 
+  mutate(bias = "no") %>% 
+  na.omit() -> just_pols_dem
+
+
+
+just_pols_dem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%   
+  mutate(term = case_when(
+    term == "polity10" ~   "Polity/FH"
+  )) %>% 
+  mutate(model =  "Models P2.1") -> just_pols_dat_dem
+
+save(just_pols_dat_dem, file = "data/just_pols_dat_dem.Rdata")
+
+
+just_pols_dat_dem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.09,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 0.8),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.05,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)")),
+                       values = gdocs_pal()(1)) +
+  # ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  #scale_x_discrete(labels = expression(displaystyle(bold(Polity/FH))),  parse=TRUE) +
+  # scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
+  #                    limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Democracy Sample") + 
+  theme(plot.title = element_text(size=14, face="bold.italic"))  + 
+  guides(colour = guide_legend(reverse=T)) +
+  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols_dem
+
+
+ggsave(gg_just_pols_dem, filename = "images/gg_just_pols_dem.png", width = 8, height = 9)
+```
+
+## nondemsample
+
+```{r}
+list(
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + polity10 +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined_nondem, weights = weight),
+
+lmer(gov_trust_low ~ income + educ + 
+                              work + age + sex + polity10 +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined_nondem, weights = weight),
+
+lmer(gov_trust_high ~ income + educ + 
+                              work + age + sex + polity10 +
+                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined_nondem, weights = weight)
+) -> polity_nondem
+
+
+
+polity_nondem %>% 
+   purrr::map(broom::tidy) %>% 
+   bind_rows() %>% 
+    left_join(polity_nondem %>% 
+                purrr::map(p_value) %>% 
+                bind_rows()) %>% 
+  mutate(bias = c(rep("no", 19), rep("low", 19), rep("high", 19))) %>% 
+  na.omit() -> just_pols_nondem
+
+
+
+just_pols_nondem %>% 
+  janitor::clean_names() %>% 
+  mutate(stars = get_p_values(p_value)) %>% 
+  filter(term %nin% c("sex","income","educ", 
+                      "work", "age", "sex",
+                      "afro", "latino", "americas", "asian", "ESS",
+                      "ethnic10", "pop10", "gdp10", "lifeexp10", 
+                      "corrupt10", "urbanratio10",
+                      "(Intercept)")) %>% 
+  mutate(term_cite = term) %>%   
+  mutate(term = case_when(
+    term == "polity10" ~   "Polity/FH"
+  )) %>% 
+  mutate(model =  "Models P3.1 - Models P3.3") -> just_pols_dat_nondem
+
+save(just_pols_dat_nondem, file = "data/just_pols_dat_nondem.Rdata")
+
+
+just_pols_dat_nondem %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.12,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 0.8),
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.05,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)", 
+                                          "Regime Support (Low Bias)", 
+                                          "Regime Support (High Bias)")),
+                       values = rev(gdocs_pal()(3))) +
+  # ggthemes::scale_fill_hc() +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Polity/FH")),
+                   labels = c("Polity/FH"=expression(displaystyle(bold(Polity/FH))),
+                            parse=TRUE)) +
+  # scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
+  #                    limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Non-Democracy Sample") + 
+  theme(plot.title = element_text(size=14, face="bold.italic"))  + 
+  guides(colour = guide_legend(reverse=T)) +
+  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols_nondem
+
+
+ggsave(gg_just_pols_nondem, filename = "images/gg_just_pols_nondem.png", width = 8, height = 9)
+
+```
+
+
+#### Merging
+
+```{r}
+legend_b_just <- cowplot::get_legend(gg_just_pols + theme(legend.direction = "horizontal",
+                                                   legend.justification="center",
+                                                   legend.box.just = "bottom"))
+
+# cowplot::plot_grid(gg_controls  + theme(legend.position="none"),
+#                    gg_pols + theme(legend.position="none"))
+
+
+# ggsave(filename = "images/coefplot.png", width = 18, height = 7)
+
+library(gridExtra)
+
+grid.arrange(grid.arrange(gg_just_pols  + theme(legend.position="none"),
+             gg_just_pols_dem + theme(legend.position="none"), ncol=2,
+             widths = c(5, 2.7)), 
+             gg_just_pols_nondem + theme(legend.position="none"),
+             legend_b_just, ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)),
+             widths = c(2.7, 1.9), heights = c(2.5, 0.2)) -> coefplot_polities
+
+ggsave(coefplot_polities, filename = "images/coefplot_polities.png", width = 18, height = 10)
+
+```
+
+
+# anovie plots
+
+## complete sample
+
+```{r}
+
+rbind(
+1:6 %>% 
+  purrr::map(~get_anovies(mods1_c, mods1_pol, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10")),
+1:6 %>% 
+  purrr::map(~get_anovies(mods2_c, mods2_pol, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "low") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10")),
+1:6 %>% 
+  purrr::map(~get_anovies(mods3_c, mods3_pol, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "high") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10"))
+)  -> anovies_delibs
+
+
+rbind(
+1:6 %>% 
+  purrr::map(~get_anovies_pol(mods1_pol, polity_complete[[1]], .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10")),
+
+1:6 %>% 
+  purrr::map(~get_anovies_pol(mods2_pol, polity_complete[[2]], .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "low") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10")),
+
+1:6 %>% 
+  purrr::map(~get_anovies_pol(mods3_pol, polity_complete[[3]], .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "high") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", "common10", "countr10", "engage10"))
+
+) -> anovies_pols
+
+rbind(anovies_pols %>% 
+        mutate(comparison = "Just Polity/FH Models vs. Complete Models"),
+      anovies_delibs %>% 
+        mutate(comparison = "Just Deliberation Models vs. Complete Models")) -> full_anovies
+
+full_anovies %<>% 
+ mutate(stars = ifelse(stars == "", "-", stars)) %>% 
+ mutate(stars = case_when(
+   stars == "^" ~ "p < 0.10", 
+   stars == "*" ~ "p < 0.05", 
+   stars == "**" ~ "p < 0.01", 
+   stars == "***" ~ "p < 0.001", 
+   stars == "-" ~ "n.s."
+ )) %>% 
+ mutate(stars = factor(stars, levels = c("n.s.", "p < 0.10", "p < 0.05", 
+                                         "p < 0.01", "p < 0.001"))) %>% 
+ mutate(report =  paste0("chi^2*", report)) %>% 
+ mutate(bias = case_when(
+   bias == "no" ~ "No Bias",
+   bias == "low" ~ "Low Bias",
+   bias == "high" ~ "High Bias")) %>% 
+ mutate(bias = factor(bias, levels = c("No Bias", "Low Bias", "High Bias"))) %>% 
+ mutate(type = case_when(
+    type == "delib10" ~ "Deliberation Component Index",
+    type == "reason10" ~ "Reasoned Justification",
+    type == "common10" ~ "Common Good",
+    type == "countr10" ~ "Counter-Arguments",
+    type == "consult10" ~ "Range of Consultation",
+    type == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(type = factor(type, levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) 
+
+save(full_anovies, file = "data/full_anovies.Rdata")
+
+
+full_anovies %>% 
+ ggplot(aes(bias, type, fill = stars)) +
+   geom_tile(color = "white") +
+   scale_fill_manual("Likelihood Ratio Test\n Significance Level", 
+                     values = c("lightgray", "#bae4b3", "#74c476", "#31a354", "#006d2c")) +
+   facet_wrap(~comparison) +
+   #coord_fixed()  + 
+   ylab("Models") +
+   xlab("") +
+   geom_text(aes(bias, type, label = report), color = "black", size = 4, parse = T) +
+   # scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   #   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   #    name="Pearson Correlation\n") +
+   ggthemes::theme_hc()
+
+ggsave(filename = "images/model_comparison.png", width = 11, height = 5)
+
+
+```
+
+## demsample
+
+```{r}
+# rm(mods1_c, mods2_c, mods3_c)
+
+1:6 %>% 
+  purrr::map(~get_anovies(mods1_c_dem, mods1_pol_dem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10"))  -> anovies_delibs_dem
+
+
+1:6 %>%
+  purrr::map(~get_anovies_pol(mods1_pol_dem, polity_dem, .x)) %>%
+  bind_rows() %>%
+  mutate(bias = "no") %>%
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")) -> anovies_pols_dem
+
+rbind(anovies_pols_dem %>% 
+        mutate(comparison = "Just Polity/FH Models vs. Complete Models"),
+      anovies_delibs_dem %>% 
+        mutate(comparison = "Just Deliberation Models vs. Complete Models")) -> full_anovies_dem
+
+full_anovies_dem %<>% 
+ mutate(stars = ifelse(stars == "", "-", stars)) %>% 
+ mutate(stars = case_when(
+   stars == "^" ~ "p < 0.10", 
+   stars == "*" ~ "p < 0.05", 
+   stars == "**" ~ "p < 0.01", 
+   stars == "***" ~ "p < 0.001", 
+   stars == "-" ~ "n.s."
+ )) %>% 
+ mutate(stars = factor(stars, levels = c("n.s.", "p < 0.10", "p < 0.05", 
+                                         "p < 0.01", "p < 0.001"))) %>% 
+ mutate(report =  paste0("chi^2*", report)) %>% 
+ mutate(bias = case_when(
+   bias == "no" ~ "No Bias",
+   bias == "low" ~ "Low Bias",
+   bias == "high" ~ "High Bias")) %>% 
+ mutate(bias = factor(bias, levels = c("No Bias", "Low Bias", "High Bias"))) %>% 
+ mutate(type = case_when(
+    type == "delib10" ~ "Deliberation Component Index",
+    type == "reason10" ~ "Reasoned Justification",
+    type == "common10" ~ "Common Good",
+    type == "countr10" ~ "Counter-Arguments",
+    type == "consult10" ~ "Range of Consultation",
+    type == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(type = factor(type, levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) 
+
+save(full_anovies_dem, file = "data/full_anovies_dem.Rdata")
+
+
+full_anovies_dem %>% 
+ ggplot(aes(bias, type, fill = stars)) +
+   geom_tile(color = "white") +
+   scale_fill_manual("Likelihood Ratio Test\n Significance Level", 
+                     values = c("lightgray", "#bae4b3", "#74c476", "#31a354", "#006d2c")) +
+   facet_wrap(~comparison) +
+   #coord_fixed()  + 
+   ylab("Models") +
+   xlab("") +
+   geom_text(aes(bias, type, label = report), color = "black", size = 4, parse = T) +
+   # scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   #   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   #    name="Pearson Correlation\n") +
+   ggthemes::theme_hc()
+
+ggsave(filename = "images/model_comparison_dem.png", width = 11, height = 5)
+
+
+```
+
+## nondemsample
+
+```{r}
+# rm(mods1_c_dem, mods1_pol_dem, mods1_pol)
+
+rbind(
+1:6 %>% 
+  purrr::map(~get_anovies(mods1_c_nondem, mods1_pol_nondem , .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "no") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")),  
+
+1:6 %>% 
+  purrr::map(~get_anovies(mods2_c_nondem, mods2_pol_nondem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "low") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")),  
+
+1:6 %>% 
+  purrr::map(~get_anovies(mods3_c_nondem, mods3_pol_nondem, .x)) %>% 
+  bind_rows() %>% 
+  mutate(bias = "high") %>% 
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10"))  
+
+) -> anovies_delibs_nondem
+
+rbind(
+1:6 %>%
+  purrr::map(~get_anovies_pol(mods1_pol_nondem, polity_nondem[[1]], .x)) %>%
+  bind_rows() %>%
+  mutate(bias = "no") %>%
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")),
+1:6 %>%
+  purrr::map(~get_anovies_pol(mods2_pol_nondem, polity_nondem[[2]], .x)) %>%
+  bind_rows() %>%
+  mutate(bias = "low") %>%
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10")), 
+
+1:6 %>%
+  purrr::map(~get_anovies_pol(mods3_pol_nondem, polity_nondem[[3]], .x)) %>%
+  bind_rows() %>%
+  mutate(bias = "high") %>%
+  mutate(type = c("delib10", "consult10", "reason10", 
+                  "common10", "countr10", "engage10"))
+
+) -> anovies_pols_nondem
+
+rbind(anovies_pols_nondem %>% 
+        mutate(comparison = "Just Polity/FH Models vs. Complete Models"),
+      anovies_delibs_nondem %>% 
+        mutate(comparison = "Just Deliberation Models vs. Complete Models")) -> full_anovies_nondem
+
+full_anovies_nondem %<>% 
+ mutate(stars = ifelse(stars == "", "-", stars)) %>% 
+ mutate(stars = case_when(
+   stars == "^" ~ "p < 0.10", 
+   stars == "*" ~ "p < 0.05", 
+   stars == "**" ~ "p < 0.01", 
+   stars == "***" ~ "p < 0.001", 
+   stars == "-" ~ "n.s."
+ )) %>% 
+ mutate(stars = factor(stars, levels = c("n.s.", "p < 0.10", "p < 0.05", 
+                                         "p < 0.01", "p < 0.001"))) %>% 
+ mutate(report =  paste0("chi^2*", report)) %>% 
+ mutate(bias = case_when(
+   bias == "no" ~ "No Bias",
+   bias == "low" ~ "Low Bias",
+   bias == "high" ~ "High Bias")) %>% 
+ mutate(bias = factor(bias, levels = c("No Bias", "Low Bias", "High Bias"))) %>% 
+ mutate(type = case_when(
+    type == "delib10" ~ "Deliberation Component Index",
+    type == "reason10" ~ "Reasoned Justification",
+    type == "common10" ~ "Common Good",
+    type == "countr10" ~ "Counter-Arguments",
+    type == "consult10" ~ "Range of Consultation",
+    type == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(type = factor(type, levels = rev(c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society")))) 
+
+save(full_anovies_nondem, file = "data/full_anovies_nondem.Rdata")
+
+
+full_anovies_nondem %>% 
+ ggplot(aes(bias, type, fill = stars)) +
+   geom_tile(color = "white") +
+   scale_fill_manual("Likelihood Ratio Test\n Significance Level", 
+                     values = c("lightgray", "#bae4b3", "#74c476", "#31a354", "#006d2c")) +
+   facet_wrap(~comparison) +
+   #coord_fixed()  + 
+   ylab("Models") +
+   xlab("") +
+   geom_text(aes(bias, type, label = report), color = "black", size = 4, parse = T) +
+   # scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   #   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   #    name="Pearson Correlation\n") +
+   ggthemes::theme_hc()
+
+ggsave(filename = "images/model_comparison_nondem.png", width = 11, height = 5)
+
+
+```
 
 
 

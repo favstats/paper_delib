@@ -987,23 +987,23 @@ save(ESS, file = "codebooks/singles/ESS.Rdata")
 
 afro %<>% 
   mutate(survey = rep("afro", nrow(afro))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) 
+  mutate(cntry = countrycode(cntry, "country.name", "country.name")) 
 
 latino %<>%  
   mutate(survey = rep("latino", nrow(latino))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en"))
+  mutate(cntry = countrycode(cntry, "country.name", "country.name"))
 
 americas %<>%  
   mutate(survey = rep("americas", nrow(americas))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en"))
+  mutate(cntry = countrycode(cntry, "country.name", "country.name"))
 
 asian %<>%  
   mutate(survey = rep("asian", nrow(asian))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en"))
+  mutate(cntry = countrycode(cntry, "country.name", "country.name"))
 
 wvs %<>%  
   mutate(survey = rep("wvs", nrow(wvs))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %>%
+  mutate(cntry = countrycode(cntry, "country.name", "country.name")) %>%
     mutate_at(
       vars(
         income, educ,
@@ -1015,7 +1015,7 @@ wvs %<>%
 
 ESS %<>%  
   mutate(survey = rep("ESS", nrow(ESS))) %>% 
-  mutate(cntry = countrycode(cntry, "country.name.en", "country.name.en")) %>%
+  mutate(cntry = countrycode(cntry, "country.name", "country.name")) %>%
     mutate_at(
     vars(
       income, educ,
@@ -1152,6 +1152,8 @@ table(subset(merged,merged$cntry=="Singapore")$survey,
 hist(merged$gov_trust)
 
 save(merged, file = "data/level1.Rdata")
+
+merged %>% select(cntry) %>% unique()
 ```
 
 
@@ -1162,6 +1164,9 @@ save(merged, file = "data/level1.Rdata")
 ## V-Dem
 
 ```{r}
+
+
+
 load(vdems_start_url)
 
 vdems_sub <- vdems_start %>% filter(year %in% 2000:2010)
@@ -1354,10 +1359,11 @@ vdem <- vdems_start %>%
     )
   ) %>%
   mutate(regime = factor(regime, levels = c("demo", "ano", "auto"))) %>% 
-  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en")) %>% 
+  mutate(cntry = ifelse(str_detect(cntry, "ietnam"), "Vietnam", cntry)) %>%   
+  mutate(cntry = countrycode(cntry,"country.name","country.name")) %>% 
   select(-n)
 
-vdem$cntry[40] <- "Viet Nam"
+# vdem$cntry[40] <- "Viet Nam"
 
 
 # ifelse(round(vdem$polity10 * 2 -10) >= -5 & round(vdem$polity10 * 2 -10) <= 5, 1, 0)
@@ -1370,128 +1376,27 @@ print(levels(vdem$regime))
 # DURATION OF REGIME?! e_democracy_duration
 ```
 
-### To Do - Regions
 
-```{r}
-  mutate(regions = vdems_sub %>% 
-           dcast(country_name ~ year, 
-                 value.var=c("e_regionpol")) %>%
-           select('2000') %>% 
-           mutate(regions = fct_recode(as.factor(`2000`),
-                                "E. Europe and C. Asia (post-Communist)" = "1",
-                                "Latin America & Carribean" = "2",
-                                "MENA" = "3",
-                                "Sub-Saharan Africa" = "4",
-                                "W. Europe and N. America" = "5",
-                                "South & East Asia & Pacific" = "6",
-                                "South & East Asia & Pacific" = "7",
-                                "South & East Asia & Pacific" = "8",
-                                "South & East Asia & Pacific" = "9",
-                                "Latin America & Carribean" = "10")  %>%
-                                as_factor))  %>%
-           select(regions)
-
-
-table(regions)
-
-regions2 <- vdems_sub %>% 
-  dcast(country_name ~ year, 
-        value.var=c("e_regionpol")) %>%
-  select('2000') %>% 
-  transmute(fct_recode(as.factor(`2000`),
-                       "E. Europe and C. Asia (post-Communist)" = "1",
-                       "Latin America & Carribean" = "2",
-                       "MENA" = "3",
-                       "Sub-Saharan Africa" = "4",
-                       "W. Europe and N. America" = "5",
-                       "East Asia" = "6",
-                       "South-East Asia" = "7",
-                       "South Asia" = "8",
-                       "Pacific" = "9",
-                       "Latin America & Carribean" = "10"))
-
-table(regions2)
-
-regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
-
-postcom   <- as.numeric(regions3 == 1)
-latin     <- as.numeric(regions3 == 2 | regions3 == 10)
-mena      <- as.numeric(regions3 == 3)
-subsahara <- as.numeric(regions3 == 4)
-west      <- as.numeric(regions3 == 5)
-e.asia    <- as.numeric(regions3 == 6)
-s.e.asia  <- as.numeric(regions3 == 7)
-s.asia    <- as.numeric(regions3 == 8)
-pacific   <- as.numeric(regions3 == 9)
-
-
-ww <- vdems_sub %>% 
-  dcast(country_name ~ year, 
-                 value.var=c("e_regionpol")) %>%
-  select('2000') %>% 
-  mutate(regions = fct_recode(as.factor(`2000`),
-                                "E. Europe and C. Asia (post-Communist)" = "1",
-                                "Latin America & Carribean" = "2",
-                                "MENA" = "3",
-                                "Sub-Saharan Africa" = "4",
-                                "W. Europe and N. America" = "5",
-                                "South & East Asia & Pacific" = "6",
-                                "South & East Asia & Pacific" = "7",
-                                "South & East Asia & Pacific" = "8",
-                                "South & East Asia & Pacific" = "9",
-                                "Latin America & Carribean" = "10")) %>%
-                                 as_factor() %>%
-                                 select(regions)
-
-ww
-
-regions2 <- vdems_sub %>% 
-  dcast(country_name ~ year, 
-        value.var=c("e_regionpol")) %>%
-  select('2000') %>% 
-  transmute(fct_recode(as.factor(`2000`),
-                       "E. Europe and C. Asia (post-Communist)" = "1",
-                       "Latin America & Carribean" = "2",
-                       "MENA" = "3",
-                       "Sub-Saharan Africa" = "4",
-                       "W. Europe and N. America" = "5",
-                       "East Asia" = "6",
-                       "South-East Asia" = "7",
-                       "South Asia" = "8",
-                       "Pacific" = "9",
-                       "Latin America & Carribean" = "10"))
-
-table(regions2)
-
-regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
-
-postcom   <- as.numeric(regions3 == 1)
-latin     <- as.numeric(regions3 == 2 | regions3 == 10)
-mena      <- as.numeric(regions3 == 3)
-subsahara <- as.numeric(regions3 == 4)
-west      <- as.numeric(regions3 == 5)
-e.asia    <- as.numeric(regions3 == 6)
-s.e.asia  <- as.numeric(regions3 == 7)
-s.asia    <- as.numeric(regions3 == 8)
-pacific   <- as.numeric(regions3 == 9)
-
-
-
-```
 
 
 ## QoG
 
 ```{r}
-load(qog_url)
+load("data/qog.Rdata")
+
+count_na <- function(x) sum(is.na(x))
 
 qog10 <- qog %>% 
   filter(year %in% 2000:2010) %>% 
-  mutate(cntry = countrycode(ccodecow, "cown","country.name.en"))
+  mutate(count_na = apply(., 1, count_na)) %>% 
+  filter(count_na < 2050) %>%  
+  mutate(cntry = countrycode(ccodealp, "iso3c","country.name"))
 
 qog10 <- qog %>% 
   filter(year %in% 2000:2010) %>% 
-  mutate(cntry = countrycode(ccodecow, "cown","country.name.en")) %>% 
+  mutate(count_na = apply(., 1, count_na)) %>% 
+  filter(count_na < 2050) %>%  
+  mutate(cntry = countrycode(ccodealp, "iso3c","country.name")) %>% 
   group_by(cntry) %>%
   tally() %>% 
   mutate(ethnic10 = qog10 %>%
@@ -1514,7 +1419,7 @@ qog10 <- qog %>%
            rowMeans) %>% 
   mutate(lifeexp10 = qog10 %>%
            dcast(cntry ~ year, 
-                 value.var = c("wdi_lifexp"), 
+                 value.var = c("ihme_lebs0001"), 
           fun.aggregate = mean) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>% 
@@ -1524,12 +1429,24 @@ qog10 <- qog %>%
           fun.aggregate = mean) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>% 
-  mutate(work10 = qog10 %>%
-           dcast(cntry ~ year, 
-                 value.var = c("wdi_unemp"), 
+  mutate(urbanpop10 = qog10 %>%
+           dcast(cntry ~ year,
+                 value.var = c("wdi_popurb"),
           fun.aggregate = mean) %>%
            select(`2000`:`2010`) %>%
-           rowMeans) %>% 
+           rowMeans) %>%
+  mutate(qogpop10 = qog10 %>%
+           dcast(cntry ~ year,
+                 value.var = c("pwt_pop"),
+          fun.aggregate = mean) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans) %>%  
+  # mutate(work10 = qog10 %>%
+  #          dcast(cntry ~ year, 
+  #                value.var = c("wdi_unemp"), 
+  #         fun.aggregate = mean) %>%
+  #          select(`2000`:`2010`) %>%
+  #          rowMeans) %>% 
   mutate(frac_elites10 =  qog10 %>% filter(year %in% 2004:2010) %>%
            dcast(cntry ~ year, 
                  value.var = c("ffp_fe"), 
@@ -1546,6 +1463,29 @@ qog10 <- qog %>%
 #  mutate(al_ethnic = as.numeric(al_ethnic)) %>% 
   
 qog10
+
+# qog10 %>%
+#   # select(cntry, cname, ccodecow) %>%
+#   group_by(cntry) %>%
+#   slice(1) %>%
+#   arrange(cntry)
+# # 
+# # countrycode()
+# 
+# qog %>% 
+#   filter(year %in% 2000:2010) %>% 
+#   filter(str_detect(cname, "Germany")) %>% 
+#   select(cname, al_ethnic, gle_cgdpc)
+# 
+
+# 
+# qog %>%
+#   filter(year %in% 2000:2010) %>%
+#   filter(str_detect(cname, "Taiwan")) %>%
+# 
+#   select(cname, wdi_lifexp)
+
+# options(scipen=999)
 
 ```
 
@@ -1569,7 +1509,7 @@ gini %<>%
                  value.var = c("gini_disp")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>% 
-  mutate(cntry = countrycode(cntry,"country.name.en","country.name.en")) %>%  
+  mutate(cntry = countrycode(cntry,"country.name","country.name")) %>%  
   select(cntry, gini10)
 
 
@@ -1589,7 +1529,7 @@ level2
 ### Ind + Country
 
 ```{r}
-load("data/level1.Rdata")
+# load("data/level1.Rdata")
 
 combined <- merge(x = merged, y = level2, by = "cntry") %>% 
               mutate(cntryears = paste(cntry, year))
@@ -1599,7 +1539,8 @@ combined <- merge(x = merged, y = level2, by = "cntry") %>%
 
 vdem2 <- vdems_start %>%
   filter(year %in% 2010:2015) %>% 
-  mutate(cntry = countrycode(country_name,"country.name.en","country.name.en")) #%>% 
+  mutate(country_name = ifelse(str_detect(country_name, "ietnam"), "Vietnam", country_name)) %>%   
+  mutate(cntry = countrycode(country_name,"country.name","country.name")) #%>% 
  # select(cntry, country_name)
 
 # vdem2$cntry[996] <- "Viet Nam"
@@ -1630,58 +1571,13 @@ save(level2,file = "data/level2.Rdata")
 ```
 
 
-# Weighting
+# Weighting, Remove NAs and Normalizing
 
-## Macro Level
-
-```{r}
-
-macro  <- combined %>% 
-                mutate(gov_trust = range01(gov_trust)*100) %>% 
-                # mutate(demtoday = range01(demtoday)*100) %>% 
-                plyr::ddply(~cntry,
-                     summarise,
-                     mean_gov = mean(gov_trust, na.rm=T),
-                     mean_dem = mean(na.rm=T),
-                     discuss = mean(discuss, na.rm=T)) %>% 
-#                     polity10 = mean(polity10, na.rm=T),
-#                     polity_demdummy = mean(polity_demdummy, na.rm=T)) %>% 
-                mutate(discuss_round = round(discuss*4)) %>% 
-                mutate(mean_gov_low = case_when(
-                      discuss_round == 2 ~ mean_gov * .9,
-                      discuss_round == 1 ~ mean_gov * .85,
-                      discuss_round %in% c(3,4) ~ mean_gov)) %>% 
-                mutate(mean_gov_high = case_when(
-                      discuss_round == 2 ~ mean_gov * .8,
-                      discuss_round == 1 ~ mean_gov * .75,
-                      discuss_round %in% c(3,4) ~ mean_gov)) %>% 
-                merge(level2, by = "cntry") %>% 
-                mutate_at(vars(common10, reason10, consult10, 
-                 countr10, engage10, engage10, delib10), 
-                                          range01)
-
-macro_dem <- macro %>% 
-                      filter(polity_demdummy == 1)
-
-macro_aut <- macro %>% 
-                      filter(polity_demdummy == 0)
-
-# table_stuff2<-subset(table_stuff,
-#                      !is.na(table_stuff$regime) &
-#                        table_stuff$cntry!="Qatar" &
-#                       table_stuff$cntry!="Uzbekistan")
-
-
-save(macro, file = "data/macro.Rdata")
-save(macro_dem, file = "data/macro_dem.Rdata")
-save(macro_aut, file = "data/macro_aut.Rdata")
-
-```
 
 ## Individual Level
 
 ```{r}
-combined  <- combined %>% 
+combined <- combined %>% 
                 mutate(discuss_round = round(discuss*4)) %>% 
                 mutate(gov_trust_low = case_when(
                       discuss_round == 2 ~ gov_trust * .9,
@@ -1691,11 +1587,69 @@ combined  <- combined %>%
                       discuss_round == 2 ~ gov_trust * .8,
                       discuss_round == 1 ~ gov_trust * .75,
                       discuss_round %in% c(3,4) ~ gov_trust)) %>% 
-                mutate_at(vars(common10, reason10, consult10, 
-                 countr10, engage10, engage10, delib10), 
-                                          range01)
+                mutate(urbanratio10 = ifelse(is.na(urbanratio10), urbanpop10, urbanratio10)) %>% 
+                mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
+                select(cntry, year, gov_trust, gov_trust_low, gov_trust_high, age:ESS, delib10:engage10, polity10,
+                       pol_round, polity_demdummy, polity_anodummy, polity_autodummy, polity_autodummy,
+                       regime, discuss, discuss_round, gdp10, corrupt10, lifeexp10, pop10, 
+                       poly10, riw10, unified_dem10, urbanratio10, weight) %>% 
+  na.omit() %>% 
+  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01)
 
-save(combined,file = "data/combined.Rdata")
+# combined %>% select(cntry) %>% unique()
+
+save(combined, file = "data/combined.Rdata")
+
+```
+
+
+## Macro Level
+
+```{r}
+
+macro  <- combined %>% 
+                # mutate(gov_trust = range01(gov_trust)) %>% 
+                # mutate(demtoday = range01(demtoday)*100) %>% 
+                group_by(cntry) %>% 
+                dplyr::summarise(
+                  mean_gov = mean(gov_trust, na.rm=T),
+                  mean_gov_low = mean(gov_trust_low, na.rm=T),
+                  mean_gov_high = mean(gov_trust_high, na.rm=T),
+                  discuss = mean(discuss, na.rm=T),
+                  ) %>% 
+                merge(level2, by = "cntry") %>% 
+                zap_inf() %>% 
+                mutate(urbanratio10 = ifelse(is.na(urbanratio10), urbanpop10, urbanratio10)) %>% 
+                mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
+                select(cntry, mean_gov, mean_gov_low, mean_gov_high, 
+                       delib10:polity10, 
+                       pol_round, polity_demdummy, polity_anodummy, 
+                       polity_autodummy, polity_autodummy,
+                       regime, discuss, #discuss_round, 
+                       gdp10, corrupt10, lifeexp10, pop10, 
+                       poly10, riw10, unified_dem10, urbanratio10) %>% 
+                drop_na(mean_gov) %>% 
+                mutate(count_na = apply(., 1, count_na)) %>% 
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+
+macro_dem <- macro %>% 
+                      filter(polity_demdummy == 1) %>% 
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+
+macro_aut <- macro %>% 
+                      filter(polity_demdummy == 0) %>% 
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+
+# table_stuff2<-subset(table_stuff,
+#                      !is.na(table_stuff$regime) &
+#                        table_stuff$cntry!="Qatar" &
+#                       table_stuff$cntry!="Uzbekistan")
+
+
+
+save(macro, file = "data/macro.Rdata")
+save(macro_dem, file = "data/macro_dem.Rdata")
+save(macro_aut, file = "data/macro_aut.Rdata")
 
 ```
 
@@ -2013,7 +1967,7 @@ qog10 <- subset(qog,qog$year==2000 |
                   qog$year==2010)
 
 library(countrycode)
-qog10$cntry<-countrycode(qog10$ccodecow, "cown","country.name.en")
+qog10$cntry<-countrycode(qog10$ccodecow, "cown","country.name")
 qog10$al_ethnic<-as.numeric(qog10$al_ethnic)
 #tidyr::gather(qog10,c("cntry","year"),"al_ethnic")
 
@@ -2039,7 +1993,7 @@ data_wide17 <- reshape(data = qog10a,
 table(qog$al_ethnic,qog$year)
 
 qog14 <- subset(qog,qog$year==2014)
-qog14$cntry<-countrycode(qog14$ccodecow, "cown","country.name.en")
+qog14$cntry<-countrycode(qog14$ccodecow, "cown","country.name")
 qog14 <- qog14 %>% dplyr::select(cntry,year,cspf_legit) %>%
   as.data.frame()
 data_wide18 <- reshape(data = qog14,
@@ -2049,7 +2003,7 @@ data_wide18 <- reshape(data = qog14,
                        direction = "wide")
 
 qog15 <- subset(qog,qog$year==2015)
-qog15$cntry<-countrycode(qog15$ccodecow, "cown","country.name.en")
+qog15$cntry<-countrycode(qog15$ccodecow, "cown","country.name")
 qog15 <- qog15 %>% dplyr::select(cntry,year,ffp_sl) %>%
   as.data.frame()
 data_wide19 <- reshape(data = qog15,
@@ -2117,7 +2071,7 @@ oreast
 
 qog14$ht_region 
 
-culreg$cntry<-countrycode(culreg$V2, "cown","country.name.en")
+culreg$cntry<-countrycode(culreg$V2, "cown","country.name")
 tabeletto<-merge(table_stuff,culreg,by="cntry")
 tabeletto<-as.data.frame(cbind(table_stuff$regions,
                                as.character(table_stuff$cntry),
@@ -2134,7 +2088,7 @@ table_stuff3 <- merge(table_stuff,culreg,by="cntry")
 table(as.character(tabeletto$V3))
 
 qog100 <- subset(qog,qog$year==2010)
-qog100$cntry<-countrycode(sjmisc::to_label(qog100$ccodecow), "cown","country.name.en")
+qog100$cntry<-countrycode(sjmisc::to_label(qog100$ccodecow), "cown","country.name")
 qog100 <- qog100 %>% dplyr::select(cntry,year,ht_regtype1) %>%
   as.data.frame()
 qog100$regtype<-sjmisc::to_label(qog100$ht_regtype1)
@@ -2158,7 +2112,7 @@ qogthingy<-merge(x=qogthingy, y=qog100, by="cntry")
 
 
 qog_cs <-read_spss("C:/Users/Favone/Downloads/qog_std_cs_jan17.sav") #loading dataset
-qog_cs$cntry<-countrycode(qog_cs$ccodecow, "cown","country.name.en")
+qog_cs$cntry<-countrycode(qog_cs$ccodecow, "cown","country.name")
 qog_cs$legit3<-as.numeric(qog_cs$gov_ixlegitimacyindex)
 
 legit_dat<-data.frame(qog_cs$cntry,qog_cs$legit3)
@@ -2176,9 +2130,9 @@ aggrdelib$asia <- aggrdelib$e.asia + aggrdelib$s.e.asia + aggrdelib$s.asia + agg
 
 SFI <-read_spss("C:/Users/Favone/Downloads/SFIv2016.sav") #loading dataset
 SFI <- subset(SFI,SFI$year==2015)
-SFI$cntry <-countrycode(SFI$country, "country.name.en","country.name.en") 
+SFI$cntry <-countrycode(SFI$country, "country.name","country.name") 
 SFI$cntry[79] <- "North Korea"
-SFI$cntry <-countrycode(SFI$cntry, "country.name.en","country.name.en") 
+SFI$cntry <-countrycode(SFI$cntry, "country.name","country.name") 
 SFI$legitimacy <- SFI$legit
 SFI$legit <- NULL
 
@@ -2186,7 +2140,7 @@ SFI$legit <- NULL
 aggrdelib <- merge(x=SFI, y=aggrdelib, by="cntry")
 
 hdi <- read_csv("hdi.csv")
-hdi$cntry<-countrycode(hdi$Country, "country.name.en","country.name.en")
+hdi$cntry<-countrycode(hdi$Country, "country.name","country.name")
 hdi$'1990'<- NULL ; hdi$'1991'<- NULL ; hdi$'1992'<- NULL ; hdi$'1993'<- NULL
 hdi$'1994'<- NULL; hdi$'1995'<- NULL; hdi$'1996'<- NULL; hdi$'1997'<- NULL
 hdi$'1998'<- NULL ; hdi$'1999'<- NULL ; hdi$'2011'<- NULL ; hdi$'2012'<- NULL
@@ -2322,7 +2276,7 @@ table(qog2000$gd_ptsa,qog2000$year)
 
 qog2000$perc2 <- qog2000$gd_ptsa
 
-qog2000$cntry<-countrycode(qog2000$ccodecow, "cown","country.name.en")
+qog2000$cntry<-countrycode(qog2000$ccodecow, "cown","country.name")
 
 qog2000$cntryears <- paste(qog2000$cntry,qog2000$year)
 
@@ -2368,7 +2322,7 @@ gni<-gni[,c(2,23:28)]
 gni<-gather(as.data.frame(gni),key = "Country")
 names(gni) <- c("cntry","year","gni")
 
-gni$cntry<-countrycode(gni$cntry,"country.name.en","country.name.en")
+gni$cntry<-countrycode(gni$cntry,"country.name","country.name")
 gni$cntryears <- paste(gni$cntry,gni$year)
 
 physigni <- gni %>% dplyr::select(cntryears, gni)
@@ -2385,7 +2339,114 @@ combined <- merge(combined, physigni2, by = "cntry")
 ```
 
 
+### To Do - Regions
 
+```{r}
+  mutate(regions = vdems_sub %>% 
+           dcast(country_name ~ year, 
+                 value.var=c("e_regionpol")) %>%
+           select('2000') %>% 
+           mutate(regions = fct_recode(as.factor(`2000`),
+                                "E. Europe and C. Asia (post-Communist)" = "1",
+                                "Latin America & Carribean" = "2",
+                                "MENA" = "3",
+                                "Sub-Saharan Africa" = "4",
+                                "W. Europe and N. America" = "5",
+                                "South & East Asia & Pacific" = "6",
+                                "South & East Asia & Pacific" = "7",
+                                "South & East Asia & Pacific" = "8",
+                                "South & East Asia & Pacific" = "9",
+                                "Latin America & Carribean" = "10")  %>%
+                                as_factor))  %>%
+           select(regions)
+
+
+table(regions)
+
+regions2 <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+        value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  transmute(fct_recode(as.factor(`2000`),
+                       "E. Europe and C. Asia (post-Communist)" = "1",
+                       "Latin America & Carribean" = "2",
+                       "MENA" = "3",
+                       "Sub-Saharan Africa" = "4",
+                       "W. Europe and N. America" = "5",
+                       "East Asia" = "6",
+                       "South-East Asia" = "7",
+                       "South Asia" = "8",
+                       "Pacific" = "9",
+                       "Latin America & Carribean" = "10"))
+
+table(regions2)
+
+regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
+
+postcom   <- as.numeric(regions3 == 1)
+latin     <- as.numeric(regions3 == 2 | regions3 == 10)
+mena      <- as.numeric(regions3 == 3)
+subsahara <- as.numeric(regions3 == 4)
+west      <- as.numeric(regions3 == 5)
+e.asia    <- as.numeric(regions3 == 6)
+s.e.asia  <- as.numeric(regions3 == 7)
+s.asia    <- as.numeric(regions3 == 8)
+pacific   <- as.numeric(regions3 == 9)
+
+
+ww <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+                 value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  mutate(regions = fct_recode(as.factor(`2000`),
+                                "E. Europe and C. Asia (post-Communist)" = "1",
+                                "Latin America & Carribean" = "2",
+                                "MENA" = "3",
+                                "Sub-Saharan Africa" = "4",
+                                "W. Europe and N. America" = "5",
+                                "South & East Asia & Pacific" = "6",
+                                "South & East Asia & Pacific" = "7",
+                                "South & East Asia & Pacific" = "8",
+                                "South & East Asia & Pacific" = "9",
+                                "Latin America & Carribean" = "10")) %>%
+                                 as_factor() %>%
+                                 select(regions)
+
+ww
+
+regions2 <- vdems_sub %>% 
+  dcast(country_name ~ year, 
+        value.var=c("e_regionpol")) %>%
+  select('2000') %>% 
+  transmute(fct_recode(as.factor(`2000`),
+                       "E. Europe and C. Asia (post-Communist)" = "1",
+                       "Latin America & Carribean" = "2",
+                       "MENA" = "3",
+                       "Sub-Saharan Africa" = "4",
+                       "W. Europe and N. America" = "5",
+                       "East Asia" = "6",
+                       "South-East Asia" = "7",
+                       "South Asia" = "8",
+                       "Pacific" = "9",
+                       "Latin America & Carribean" = "10"))
+
+table(regions2)
+
+regions3 <- dcast(vdems_sub, country_name ~ year, value.var=c("e_regionpol"))$"2000"
+
+postcom   <- as.numeric(regions3 == 1)
+latin     <- as.numeric(regions3 == 2 | regions3 == 10)
+mena      <- as.numeric(regions3 == 3)
+subsahara <- as.numeric(regions3 == 4)
+west      <- as.numeric(regions3 == 5)
+e.asia    <- as.numeric(regions3 == 6)
+s.e.asia  <- as.numeric(regions3 == 7)
+s.asia    <- as.numeric(regions3 == 8)
+pacific   <- as.numeric(regions3 == 9)
+
+
+
+```
 
 
 

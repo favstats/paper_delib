@@ -3,6 +3,10 @@ title: "Dataviz"
 output: html_notebook
 ---
 
+ToDo
+Control Variables Table
+TABLES?
+WRITE IT UP
 
 # Loading the Packages
 
@@ -13,7 +17,8 @@ library(pacman)
 p_load(tidyverse, haven,sjmisc,
                      forcats, weights, car,
                      countrycode, reshape2, 
-                     magrittr, skimr, xray)
+                     magrittr, skimr, xray,
+                     ggthemes, scales)
 
 range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 
@@ -53,7 +58,7 @@ ggheatmap <- function(.data) {
    mutate(value = sprintf('%.2f', value, 2)) %>% 
    mutate(value = as.numeric(value))
  # Create a ggheatmap
- ggplot(melted_cormat, aes(Var2, Var1, fill = value))+
+ ggplot(melted_cormat, aes(Var2, Var1, fill = value)) +
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
     midpoint = 0, limit = c(-1,1), space = "Lab", 
@@ -80,9 +85,9 @@ ggheatmap <- function(.data) {
 }
 
 combined %>% 
-  select(-cntry, -survey, -n, -regime, -cntryears, -country_name, -gov_trust2) %>% 
-  select(discuss:ESS, ethnic10:glob10, delibdem10:discuss_round, delib10:engage10, gov_trust, gov_trust_low, gov_trust_high) %>% 
-  mutate_all(as.numeric) -> combined_heatmap
+  # select(-cntry, -survey, -n, -regime, -cntryears, -country_name, -gov_trust2) %>% 
+  # select(gov_trust:weight) %>% 
+  select_if(is.numeric) -> combined_heatmap
 
 ggheatmap(combined_heatmap)
 
@@ -132,14 +137,502 @@ cormat %>%
 ## Test Model
 
 ```{r}
-mod1 <- lme4::lmer(gov_trust_high ~ income + educ + 
-               work + age + sex +
-                   ethnic10 + pop10 + lifeexp10.y +# mortinf10 + 
-                 corrupt10 +
-                 equal_distrib10 + eq_health10 + eq_educ10 + urbanratio10 +
-                 afro + latino + americas + asian + ESS +
-                 (1|cntry), data = combined, weights = weight)
+# mod1 <- lme4::lmer(gov_trust_high ~ income + educ + 
+#                work + age + sex +
+#                    ethnic10 + pop10 + lifeexp10 +# mortinf10 + 
+#                  corrupt10 +  equal_distrib10 + eq_health10 + eq_educ10 + urbanratio10 +
+#                  afro + latino + americas + asian + ESS +
+#                  (1|cntry), data = combined, weights = weight)
+# 
+# texreg::screenreg(mod1)
 
-texreg::screenreg(mod1)
+```
+
+
+
+# Figure 3 Bivariate Relationship between Polity/FH and DCI
+
+```{r}
+load("data/macro.Rdata")
+
+
+macro %>% 
+  mutate(iso3 = countrycode(cntry, "country.name", "iso3c")) %>% 
+  mutate(polity_demdummy = ifelse(polity_demdummy == 1, "Democracies", "Non-Democracies")) %>% 
+  mutate(`Regime Type` = factor(polity_demdummy, levels = c("Democracies", "Non-Democracies"))) %>% 
+  ggplot(aes(delib10, polity10, 
+             color = `Regime Type`)) +
+  geom_point(aes(shape = `Regime Type`)) +
+  geom_smooth(method = "lm", se = F, size = 0.6, show.legend = F) +
+  geom_smooth(method = "lm", color = "black", linetype = 2, se = F, show.legend = F) +
+  ggrepel::geom_text_repel(aes(label = iso3), show.legend = F) +
+  ggthemes::theme_hc() +
+  ggthemes::scale_color_gdocs() +
+  ylim(20, 110) +
+  scale_y_continuous(breaks = seq(0, 1, .2), 
+                     limits = c(0, 1)) +
+  scale_x_continuous(breaks = seq(0, 1, .2), 
+                     limits = c(0, 1)) +
+  ylab("Polity/FH") +
+  xlab("Deliberative Component Index")  +
+  ggpubr::stat_cor(label.x.npc = "right", label.y.npc = "bottom", show.legend = F) +
+  ggpubr::stat_cor(color = "black", label.x.npc = "left", label.y.npc = "top", show.legend = F) 
+
+
+ggsave(filename = "images/delib_polity.png", width = 12, height = 8)
+```
+
+
+# Figure 4 - Regime Support by Polity/FH
+
+```{r}
+
+y_max <- 1.05
+y_min <- 0.2
+
+macro %>% 
+  mutate(iso3 = countrycode(cntry, "country.name", "iso3c")) %>% 
+  ggplot(aes(polity10, mean_gov, color = regime)) +
+  geom_point(aes(color = regime)) +
+  geom_smooth(aes(polity10, mean_gov), color = "black", linetype = 2) + 
+  ggrepel::geom_text_repel(aes(label = iso3, color = regime)) +
+  ggthemes::theme_hc() +
+  guides(color = F) +
+  ggthemes::scale_color_gdocs() +
+  # show_col(gdocs_pal()(3))
+  ylim(y_max, y_max) +
+  scale_y_continuous(breaks = seq(0, y_max, .2), 
+                     limits = c(y_min, y_max)) +
+  scale_x_continuous(breaks = seq(0, 1, .2), 
+                     limits = c(0, 1)) +
+  ylab("Average Regime Support") +
+  xlab("Polity/FH") + 
+  theme(axis.title=element_text(size = 10)) +
+  ggpubr::stat_cor(color = "black", label.x.npc = "right")  -> p1
+
+
+
+my_comparisons <- list(c("demo", "ano"),
+                        c("demo", "auto"), 
+                        c("auto", "ano"))
+
+symnum.args <- list(cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 1), 
+                    symbols = c("p < 0.001", "p < 0.001", "p < 0.01", "p < 0.05", "ns"))
+
+macro %>% 
+  drop_na(regime) %>% 
+  group_by(regime) %>% 
+  summarise(sd_mean_gov = sd(mean_gov, na.rm = T) %>% 
+            round(., 2),
+            mean_gov = mean(mean_gov, na.rm = T) %>% 
+            round(., 2)) %>% 
+  left_join(macro %>% 
+  drop_na(regime) %>% 
+  group_by(regime) %>% 
+  tally) -> gov_means
+
+macro %>% 
+  mutate(regime = factor(regime, levels = c("auto", "ano", "demo"))) %>% 
+  ggplot(aes(regime, mean_gov, color = regime)) +
+  geom_violin() +
+  geom_boxplot(fill = "white", width = 0.2) +
+  geom_hline(yintercept = mean(macro$mean_gov, na.rm = T), linetype = 2) + #line at base mean
+  ggpubr::stat_compare_means(aes(label = paste0("p = ", ..p.format..)), 
+                        comparisons = my_comparisons) +
+  annotate("text", y = mean(macro$mean_gov, na.rm = T) - 0.015, 
+           x = 1 - 0.44, label = round(mean(macro$mean_gov, na.rm = T), 2)) +
+  geom_jitter() +
+  geom_text(data = gov_means,
+            aes(group = regime,
+                label = as.character(mean_gov)), nudge_y = -0.03, size = 3.2) +
+  geom_text(data = gov_means,
+            aes(y = y_min+0.015, x = regime, color = regime,
+                label = paste0("N: ", n)), size = 4.2) +
+  ggthemes::theme_hc() +
+  scale_color_manual(values = rev(gdocs_pal()(3))) +
+  ggthemes::scale_fill_gdocs() +
+  ylim(y_min, y_max) +
+  scale_y_continuous(breaks = seq(0, y_max, .2), 
+                     limits = c(y_min, y_max)) +
+  xlab("") + 
+  ylab("") + 
+  guides(fill = F, color = F, point = F) +
+  scale_x_discrete(labels = c("Autocracies", "Anocracies", "Democracies")) + 
+  theme(axis.text.x = element_text(size = 12)) -> p2
+
+
+cowplot::plot_grid(p1, p2, nrow = 1, rel_widths = c(6/10, 4/10))
+
+ggsave(filename = "images/doubleplot.png", width = 12, height = 8)
+```
+
+# Figure 5: Regime Support by Freedom of Discussion
+
+```{r}
+library("scales")
+options(scipen = 999)
+
+macro %>% 
+  mutate(iso3 = countrycode(cntry, "country.name", "iso3c")) %>% 
+  mutate(discuss_plot = 5-((macro$discuss*3)+1)) %>%
+  mutate(regime = case_when(
+    regime == "demo" ~ "Democracies", 
+    regime == "ano" ~ "Anocracies", 
+    regime == "auto" ~ "Autocracies"
+  )) %>% 
+  mutate(`Regime Type` = factor(regime, levels = c("Democracies", "Anocracies", "Autocracies"))) %>% 
+  ggplot(aes(discuss_plot, mean_gov, color = `Regime Type`)) +
+  geom_point(aes(shape = `Regime Type`)) +
+  geom_smooth(method = "lm", color = "black", linetype = 2, show.legend = F) + 
+  ggrepel::geom_text_repel(aes(label = iso3), show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_gdocs() +
+  xlim(1, 4) +
+  # scale_y_continuous(breaks = seq(20, 100, 20), 
+  #                    limits = c(20, 104)) +
+  # scale_x_continuous(breaks = seq(0, 10, 2), 
+  #                    limits = c(1, 10)) +
+  ylab("Average Regime Support") +
+  xlab("(Reversed) Freedom of Discussion") + 
+  theme(axis.title=element_text(size = 10)) +
+  ggpubr::stat_cor(color = "black") 
+
+ggsave(filename = "images/regimesupport_fod.png", width = 12, height = 8)
+
+
+```
+
+
+
+# Map Preprare
+
+```{r}
+library(httr)     # getting data
+library(rgdal)    # working with shapefile
+library(dplyr)    # awesome data manipulation
+library(readr)    # faster reading of CSV data
+library(stringi)  # string manipulation
+library(stringr)  # string manipulation
+library(tidyr)    # reshaping data
+library(grid)     # for 'unit'
+library(scales)   # for 'percent'
+library(ggplot2)  # plotting
+library(ggthemes) # theme_map
+ 
+# this ensures you only download the shapefile once and hides
+# errors and warnings. remove `try` and `invisible` to see messages
+try(invisible(GET("http://www.pewglobal.org/wp-content/lib/js/world-geo.json",
+                  write_disk("world-geo.json"))), silent=TRUE)
+ 
+# use ogrListLayers("world-geo.json") to see file type & 
+# layer info to use in the call to readOGR
+#ogrListLayers("world-geo.json")
+world <- rgdal::readOGR("world-geo.json")
+world_wt <- spTransform(world, CRS("+proj=robin"))
+world_map <- fortify(world_wt)
+
+world_map %>%
+  left_join(data_frame(id=rownames(world@data), name=world@data$name)) %>%
+  select(-id) %>%
+  rename(id=name) -> world_map
+
+world_map %<>% 
+  mutate(id_new = countrycode::countrycode(id, "country.name", "country.name")) %>% 
+  mutate(id = ifelse(is.na(id_new), id, id_new)) %>% 
+  select(-id_new)
+
+save(world_map, file = "data/world_map.Rdata")
+
+```
+
+## Regime Support Map
+
+```{r}
+macro %>% 
+  mutate(id = cntry) %>% 
+  left_join(world_map, by = "id") -> combined_map
+
+world_map %>% 
+  ggplot() +
+  geom_map(map = world_map,
+         aes(x = long, y = lat, group = group, map_id = id),
+         color = "#7f7f7f", fill = "gray80", size = 0.15) +
+  geom_map(data = combined_map, 
+           map = world_map,
+        aes(map_id  = id, 
+            fill = mean_gov), size = 0.01) + 
+  theme_map() +
+#  scale_fill_gradient(low = "red", high = "blue") + 
+  coord_equal() +
+  viridis::scale_fill_viridis("Average Regime Support", 
+                              option = "D", discrete = F, end = .8,
+                              limits = c(0, 1), 
+                        breaks = c(0, .20, .40, .60, .8, 1),
+                        labels = c(0, .20, .40, .60, .8, 1)) + 
+  theme(
+    legend.justification = c(1, 0),
+    legend.position = c(0.69, 0),
+    legend.title = element_text(size = 8),
+    axis.ticks.length = unit(3, "cm"),
+    legend.direction = "horizontal") +
+  guides(fill = guide_colorbar(barwidth = 8, barheight = 0.5,
+                title.position = "top", title.hjust = 0.5,
+                label.theme = element_text(colour = "black", size = 5, angle = 0)))
+
+ggsave(filename = "images/map_regime.png", height = 12, width = 9) 
+
+combined_map %>% 
+  filter(cntry == "Vietnam")
+
+```
+
+
+## DCI Map
+
+```{r}
+
+world_map %>% 
+  ggplot() +
+  geom_map(map = world_map,
+         aes(x = long, y = lat, group = group, map_id = id),
+         color = "#7f7f7f", fill = "gray80", size = 0.15) +
+  geom_map(data = combined_map, 
+           map = world_map,
+        aes(map_id  = id, 
+            fill = delib10), size = 0.01) + 
+  theme_map() +
+#  scale_fill_gradient(low = "red", high = "blue") + 
+  coord_equal() +
+  viridis::scale_fill_viridis("Deliberative Component Index", 
+                              option = "D", discrete = F, end = .8,
+                              limits = c(0, 1), 
+                        breaks = c(0, .2, .40, .60, .80, 1),
+                        labels = c(0, .2, .40, .60, .80, 1)) + 
+  theme(
+    legend.justification = c(1, 0),
+    legend.position = c(0.69, 0),
+    legend.title = element_text(size = 8),
+    axis.ticks.length = unit(3, "cm"),
+    legend.direction = "horizontal") +
+  guides(fill = guide_colorbar(barwidth = 8, barheight = 0.5,
+                title.position = "top", title.hjust = 0.5,
+                label.theme = element_text(colour = "black", size = 5, angle = 0)))
+
+ggsave(filename = "images/map_dci.png", height = 12, width = 9)
+```
+
+
+
+
+# Megaplot
+
+
+```{r}
+macro %>% 
+  mutate(iso3 = countrycode(cntry, "country.name", "iso3c")) %>% 
+  select(mean_gov, mean_gov_low, mean_gov_high, delib10:engage10, iso3, polity_demdummy) %>% 
+  gather("support_types", "support", -iso3, -polity_demdummy, -delib10:-engage10) %>% 
+  gather("delib_types", "delib", -iso3, -polity_demdummy, -support_types, -support) %>% 
+  mutate(polity_demdummy = ifelse(polity_demdummy == 1, "Democracies", "Non-Democracies")) %>% 
+  mutate(`Regime Type` = factor(polity_demdummy, levels = c("Democracies", "Non-Democracies"))) %>% 
+  mutate(delib_types = case_when(
+    delib_types == "delib10" ~ "Deliberation Component Index",
+    delib_types == "reason10" ~ "Reasoned Justification",
+    delib_types == "common10" ~ "Common Good",
+    delib_types == "countr10" ~ "Counter-Arguments",
+    delib_types == "consult10" ~ "Range of Consultation",
+    delib_types == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(delib_types = factor(delib_types, 
+                                levels = c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society"))) %>% 
+  mutate(support_types = case_when(
+    support_types == "mean_gov" ~ "Regime Support",
+    support_types == "mean_gov_low" ~ "Regime Support - Low Bias",
+    support_types == "mean_gov_high" ~ "Regime Support - High Bias"
+  )) %>% 
+  mutate(support_types = factor(support_types, levels = c("Regime Support", 
+                                      "Regime Support - Low Bias",
+                                      "Regime Support - High Bias"))) %>% 
+  ggplot(aes(delib, support, color = `Regime Type`)) +
+  geom_point(aes(shape = `Regime Type`)) +
+  geom_smooth(method = "lm", se = F, size = 0.6, show.legend = F) +
+  geom_smooth(method = "lm", color = "black", linetype = 2, se = F, show.legend = F) +
+  facet_grid(delib_types ~ support_types) +
+  #ggrepel::geom_text_repel(aes(label = iso3)) +
+  # geom_text(aes(label = iso3)) +
+  ggpubr::stat_cor(label.x.npc = "left", label.y.npc = "bottom", show.legend = F) +
+  ggpubr::stat_cor(color = "black", label.x.npc = "right", label.y.npc = "top", show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_gdocs() +
+  # cowplot::panel_border() +# and a border around each panel
+  theme(panel.spacing = unit(2, "lines"),
+        strip.text = element_text(size = 11)) +
+  xlab("Deliberation Indices") +
+  ylab("Average Regime Support")
+
+ggsave(filename = "images/megaplot.png", height = 18, width = 14)
+```
+
+
+# Regression Plot Data
+
+```{r}
+dir("data")
+
+load("data/controls_plot.Rdata")       
+load("data/controls_plot_dem.Rdata") 
+load("data/controls_plot_nondem.Rdata")
+
+load("data/just_pols_dat.Rdata")       
+load("data/just_pols_dat_dem.Rdata") 
+load("data/just_pols_dat_nondem.Rdata")
+
+load("data/with_pols_dat.Rdata")    
+load("data/with_pols_dat_dem.Rdata")  
+load("data/with_pols_dat_nondem.Rdata")
+
+plyr::rbind.fill(
+controls_plot %>% 
+  arrange(model, desc(bias)) %>% 
+  mutate(model_cite = case_when(
+             type == "delib10"   & bias == "no"   ~ "A1.1",
+             type == "delib10"   & bias == "low"  ~ "A1.2",
+             type == "delib10"   & bias == "high" ~ "A1.3",
+             type == "reason10"  & bias == "no"   ~ "B1.1", 
+             type == "reason10"  & bias == "low"  ~ "B1.2",
+             type == "reason10"  & bias == "high" ~ "B1.3",
+             type == "common10"  & bias == "no"   ~ "C1.1",
+             type == "common10"  & bias == "low"  ~ "C1.2", 
+             type == "common10"  & bias == "high" ~ "C1.3",
+             type == "countr10"  & bias == "no"   ~ "D1.1",
+             type == "countr10"  & bias == "low"  ~ "D1.2",
+             type == "countr10"  & bias == "high" ~ "D1.3", 
+             type == "consult10" & bias == "no"   ~ "E1.1",
+             type == "consult10" & bias == "low"  ~ "E1.2",
+             type == "consult10" & bias == "high" ~ "E1.3",
+             type == "engage10"  & bias == "no"   ~ "F1.1",  
+             type == "engage10"  & bias == "low"  ~ "F1.2",
+             type == "engage10"  & bias == "high" ~ "F1.3"
+           )) %>% 
+  mutate(set = "controls_plot"),
+
+controls_plot_dem %>% 
+  tidyr::separate(model, into = c("crap", "model_cite"), sep = " ", remove = F) %>% 
+  select(-crap) %>% 
+  mutate(set = "controls_plot_dem"),
+
+controls_plot_nondem %>% 
+  arrange(model, desc(bias)) %>% 
+  mutate(model_cite = case_when(
+             type == "delib10"   & bias == "no"   ~ "A3.1",
+             type == "delib10"   & bias == "low"  ~ "A3.2",
+             type == "delib10"   & bias == "high" ~ "A3.3",
+             type == "reason10"  & bias == "no"   ~ "B3.1", 
+             type == "reason10"  & bias == "low"  ~ "B3.2",
+             type == "reason10"  & bias == "high" ~ "B3.3",
+             type == "common10"  & bias == "no"   ~ "C3.1",
+             type == "common10"  & bias == "low"  ~ "C3.2", 
+             type == "common10"  & bias == "high" ~ "C3.3",
+             type == "countr10"  & bias == "no"   ~ "D3.1",
+             type == "countr10"  & bias == "low"  ~ "D3.2",
+             type == "countr10"  & bias == "high" ~ "D3.3", 
+             type == "consult10" & bias == "no"   ~ "E3.1",
+             type == "consult10" & bias == "low"  ~ "E3.2",
+             type == "consult10" & bias == "high" ~ "E3.3",
+             type == "engage10"  & bias == "no"   ~ "F3.1",  
+             type == "engage10"  & bias == "low"  ~ "F3.2",
+             type == "engage10"  & bias == "high" ~ "F3.3"
+           )) %>% 
+  mutate(set = "controls_plot_nondem"),
+
+with_pols_dat %>% 
+  arrange(model, desc(bias)) %>% 
+  mutate(model_cite = case_when(
+             type == "delib10"   & bias == "no"   ~ "A1.4",
+             type == "delib10"   & bias == "low"  ~ "A1.5",
+             type == "delib10"   & bias == "high" ~ "A1.6",
+             type == "reason10"  & bias == "no"   ~ "B1.4", 
+             type == "reason10"  & bias == "low"  ~ "B1.5",
+             type == "reason10"  & bias == "high" ~ "B1.6",
+             type == "common10"  & bias == "no"   ~ "C1.4",
+             type == "common10"  & bias == "low"  ~ "C1.5", 
+             type == "common10"  & bias == "high" ~ "C1.6",
+             type == "countr10"  & bias == "no"   ~ "D1.4",
+             type == "countr10"  & bias == "low"  ~ "D1.5",
+             type == "countr10"  & bias == "high" ~ "D1.6", 
+             type == "consult10" & bias == "no"   ~ "E1.4",
+             type == "consult10" & bias == "low"  ~ "E1.5",
+             type == "consult10" & bias == "high" ~ "E1.6",
+             type == "engage10"  & bias == "no"   ~ "F1.4",  
+             type == "engage10"  & bias == "low"  ~ "F1.5",
+             type == "engage10"  & bias == "high" ~ "F1.6"
+           )) %>% 
+  mutate(set = "with_pols_dat"),
+
+with_pols_dat_dem %>% 
+  tidyr::separate(model, into = c("crap", "model_cite"), sep = " ", remove = F) %>% 
+  select(-crap) %>% 
+  mutate(set = "with_pols_dat_dem"),
+
+with_pols_dat_nondem %>% 
+  arrange(model, desc(bias)) %>% 
+  mutate(model_cite = case_when(
+             type == "delib10"   & bias == "no"   ~ "A3.4",
+             type == "delib10"   & bias == "low"  ~ "A3.5",
+             type == "delib10"   & bias == "high" ~ "A3.6",
+             type == "reason10"  & bias == "no"   ~ "B3.4", 
+             type == "reason10"  & bias == "low"  ~ "B3.5",
+             type == "reason10"  & bias == "high" ~ "B3.6",
+             type == "common10"  & bias == "no"   ~ "C3.4",
+             type == "common10"  & bias == "low"  ~ "C3.5", 
+             type == "common10"  & bias == "high" ~ "C3.6",
+             type == "countr10"  & bias == "no"   ~ "D3.4",
+             type == "countr10"  & bias == "low"  ~ "D3.5",
+             type == "countr10"  & bias == "high" ~ "D3.6", 
+             type == "consult10" & bias == "no"   ~ "E3.4",
+             type == "consult10" & bias == "low"  ~ "E3.5",
+             type == "consult10" & bias == "high" ~ "E3.6",
+             type == "engage10"  & bias == "no"   ~ "F3.4",  
+             type == "engage10"  & bias == "low"  ~ "F3.5",
+             type == "engage10"  & bias == "high" ~ "F3.6"
+           )) %>% 
+  mutate(set = "with_pols_dat_nondem"),
+
+just_pols_dat %>% 
+  arrange(model, desc(bias)) %>% 
+    mutate(model_cite = case_when(
+             bias == "no"   ~ "P1.1",
+             bias == "low"   ~ "P1.2",            
+             bias == "high"   ~ "P1.3")) %>% 
+  mutate(set = "just_pols_dat"),   
+
+
+just_pols_dat_dem %>% 
+  tidyr::separate(model, into = c("crap", "model_cite"), sep = " ", remove = F) %>% 
+  select(-crap) %>% 
+  mutate(set = "just_pols_dat_dem"),
+
+just_pols_dat_nondem %>% 
+  arrange(model, desc(bias)) %>% 
+    mutate(model_cite = case_when(
+             bias == "no"   ~ "P3.1",
+             bias == "low"   ~ "P3.2",            
+             bias == "high"   ~ "P3.3")) %>% 
+  mutate(set = "just_pols_dat_nondem")    
+) -> estimates_data
+
+unique(estimates_data$model_cite)
+
+estimates_data %>% 
+  filter(model_cite == "B1.5") %>% 
+  filter(term == "Democracy (RJ)") %>% 
+  mutate(estimate = sprintf('%.2f', estimate, 2)) %>% 
+  select(estimate) %>% 
+  as.character()
 ```
 

@@ -35,6 +35,11 @@ make_bold <- function(makethisbold) {
   } else return(makethisbold)
 }
 
+make_italic <- function(makethisitalic) {
+# makethisitalic <- specify_decimal(makethisitalic, 2)
+  return(paste0("\\textit{", makethisitalic, "}"))
+}
+
 combined %>% 
   select(delib10:engage10, polity10) %>% 
   mutate_all(as.numeric) -> combined_all_table
@@ -64,7 +69,8 @@ cormat_all %>%
   mutate(cor_with = paste0("Complete Data (n=", nrow(combined %>% 
                                                       select(cntry) %>% 
                                                       unique), ")")) %>% 
-  mutate_at(vars(delib10:polity10), make_bold),
+  mutate_at(vars(delib10:polity10), make_bold) %>% 
+  mutate_at(vars(delib10:polity10), make_italic),
 
 
 cormat_dem %>% 
@@ -75,7 +81,8 @@ cormat_dem %>%
                                                       filter(regime == "demo") %>% 
                                                       select(cntry) %>% 
                                                       unique), ")")) %>% 
-  mutate_at(vars(delib10:polity10), make_bold),
+  mutate_at(vars(delib10:polity10), make_bold) %>% 
+  mutate_at(vars(delib10:polity10), make_italic),
 
 
 
@@ -87,12 +94,13 @@ cormat_nondem %>%
                                                       filter(regime != "demo") %>% 
                                                       select(cntry) %>% 
                                                       unique), ")")) %>% 
-  mutate_at(vars(delib10:polity10), make_bold)
+  mutate_at(vars(delib10:polity10), make_bold) %>% 
+  mutate_at(vars(delib10:polity10), make_italic)
 ) -> combined_table
 
 combined_table %<>% 
   column_to_rownames("cor_with") %>% 
-  select(delib10, reason10, common10, countr10, countr10, consult10, engage10, polity10)
+  select(delib10, reason10, common10, countr10, consult10, engage10, polity10)
 colnames(combined_table) <- c("\\textbf{DCI}", 
                               "\\textbf{RJ}", 
                               "\\textbf{CG}", 
@@ -106,4 +114,152 @@ combined_latex <- xtable(combined_table)
 
 print(combined_latex, booktabs = T)
 ```
+
+## cite_corr
+
+```{r}
+rbind(
+cormat_all %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  filter(sample == "polity10") %>% 
+  mutate(sample = "complete"),
+cormat_dem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  filter(sample == "polity10") %>% 
+  mutate(sample = "dems"),
+cormat_nondem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("sample") %>% 
+  filter(sample == "polity10") %>% 
+  mutate(sample = "nondems")
+)  %>% 
+  select(sample, delib10, reason10, common10, countr10, 
+         consult10, engage10, polity10) -> combined_cite
+
+combined_cite %>% 
+  filter(sample == "complete") %>% 
+  select(delib10) %>% 
+  .$delib10
+
+save(combined_cite, file = "text/data/combined_cite.Rdata")
+
+cite_corr <- function(delib_indicator, sample) {
+  # delib_indicator <- enquo(delib_indicator)
+  # cor_with <- enquo(cor_with)
+  combined_cite %>% 
+    filter(sample == !!sample) %>% 
+    select_(delib_indicator) %>% 
+    mutate_all(~specify_decimal(., 2)) %>% 
+    as.character()
+}
+
+cite_corr(delib_indicator = "delib10", sample = "complete")
+
+```
+
+
+# Weighting
+
+```{r}
+load("data/macro.Rdata")
+
+macro %>% 
+  select(mean_gov:mean_gov_high, discuss) %>% 
+  cor()
+
+macro %>% 
+  mutate(discuss_round = round(5-((macro$discuss*3)+1))) %>% 
+  arrange(desc(discuss_round)) %>% 
+  filter(discuss_round > 2) %>% 
+  mutate(discuss_label = ifelse(discuss_round == 3, "\\textit{Somewhat Respected}", 
+                                "\\textit{Weakly Respected}")) %>% 
+  select(cntry, mean_gov, mean_gov_low, mean_gov_high, discuss_label) %>% 
+  mutate_at(vars(mean_gov:mean_gov_high), ~round(.,2)) %>%  
+  mutate_at(vars(mean_gov:mean_gov_high), ~sprintf('%.2f', ., 2)) %>% 
+  arrange(desc(discuss_label), desc(mean_gov)) -> weigh_table_dat
+
+
+weigh_table_latex <- xtable(weigh_table_dat)
+
+print(weigh_table_latex, booktabs = T)
+
+# -0.3797815   -0.2016119   -0.03967678
+```
+
+# Summary Statistics
+
+```{r}
+
+rbind(
+
+combined %>% 
+  select(income, educ, age, work, sex, gov_trust, gov_trust_low, gov_trust_high) %>% 
+sjmisc::descr() %>% 
+  as.data.frame() %>% 
+  select(variable, n, mean, sd, md, min, max, skew, kurtosis) %>% 
+  mutate(n = round(n)) %>% 
+  mutate_at(vars(mean:kurtosis), ~sprintf('%.2f', ., 2)) %>% 
+  mutate(variable = c(
+                      "\\textit{Financial Security}",
+                      "\\textit{Education}", 
+                      "\\textit{Age}", 
+                      "\\textit{Employment (0/1)}", 
+                      "\\textit{Sex (Male/Female)}",
+                      "\\textit{Regime Support (No Bias)}",
+                      "\\textit{Regime Support (Low Bias)}", 
+                      "\\textit{Regime Support (High Bias)}"
+                      )),
+
+
+macro %>% 
+  select(delib10, reason10, common10, countr10, consult10, 
+         engage10, polity10, lifeexp10, pop10, gdp10, corrupt10, urbanratio10, 
+         polity_demdummy, polity_anodummy, polity_autodummy) %>% 
+sjmisc::descr() %>% 
+  as.data.frame() %>% 
+  select(variable, n, mean, sd, md, min, max, skew, kurtosis) %>% 
+  mutate(n = round(n)) %>% 
+  mutate_at(vars(mean:kurtosis), ~sprintf('%.2f', ., 2)) %>% 
+  mutate(variable = c(
+                      "\\textit{DCI}",
+                      "\\textit{Reasoned Justification}", 
+                      "\\textit{Common Good}", 
+                      "\\textit{Counter-Arguments}", 
+                      "\\textit{Range of Consultation}",
+                      "\\textit{Engaged Society}",
+                      "\\textit{Polity/FH}", 
+                      "\\textit{Life Expectancy}",
+                      "\\textit{logged Population}",
+                      "\\textit{logged GDP per Capita}",
+                      "\\textit{Corruption}",
+                      "\\textit{Urban Population Ratio}",
+                      "\\textit{Democracy dummy}",
+                      "\\textit{Anocracy dummy}",
+                      "\\textit{Autocracy dummy}"
+                      ))
+
+) %>% 
+  xtable() %>% 
+  print(., booktable =T)
+
+
+ 
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+```
+
+
 

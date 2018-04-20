@@ -1,20 +1,21 @@
 ---
-geometry: "left=2.5cm,right=4cm,top=2.5cm,bottom=2cm"
+geometry: "left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm"
 output: 
   bookdown::pdf_book:
     toc: false
     includes:
      in_header: header.tex
-     # before_body: title_page.Rmd
-#     after_body: appendix.tex
+     before_body: title_page.tex
+     after_body: appendix.tex
 documentclass: article
 bibliography: references.bib
-cls: systats.cls
-csl: university-of-stuttgart-sowi-standards.csl
+#cls: systats.cls
+csl: apa.csl
 link-citations: yes
 ---
 
 
+\newpage
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -71,7 +72,7 @@ Smith says blah [-@easton1975re].
 ```
 
 \newpage
-\section{Methods and Data Preparation} \label{methods}
+\section{Empirical Section} \label{methods}
 
 ```{r child = '3_methods.Rmd'}
 ```
@@ -96,7 +97,7 @@ Smith says blah [-@easton1975re].
 
 
 # References
-
+\thispagestyle{plain}
 \setlength{\parindent}{-0.2in}
 \setlength{\leftskip}{0.2in}
 \setlength{\parskip}{8pt}
