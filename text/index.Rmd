@@ -6,7 +6,7 @@ output:
     includes:
      in_header: header.tex
      before_body: title_page.tex
-     after_body: appendix.tex
+     # after_body: appendix.tex
 documentclass: article
 classoption: a4paper
 bibliography: references.bib
@@ -35,7 +35,7 @@ knitr::opts_chunk$set(echo = F)
 
 
 
-\section{Theory}  \label{theory}
+\section{Deliberative Theory}  \label{theory}
 
 ```{r child = '2_theory.Rmd'}
 ```

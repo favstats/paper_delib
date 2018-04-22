@@ -134,26 +134,26 @@ ggsave(filename = "images/heatmap.png", height = 17, width = 17)
 # Which Control Variables?
 
 ```{r}
-cormat <- round(cor(combined_heatmap, use = "pairwise.complete.obs"),3)
-
-combined_heatmap %>% 
-  mutate_all(is.na) %>% 
-  summarize_all(sum) %>% 
-  t() %>% 
-  as.data.frame() %>% 
-  rownames_to_column("cor_with") %>% 
-  rename(n = V1) -> n_values
-
-cormat %>% 
-  as.data.frame() %>% 
-  select(polity10, gov_trust:gov_trust_high) %>% 
-  rownames_to_column("cor_with") %>% 
-  left_join(n_values) %>% 
-  filter(abs(polity10) < .5 &
-         (abs(gov_trust) > 0.05 | 
-           abs(gov_trust_low) > 0.05 | 
-           abs(gov_trust_high) > 0.05)) %>% 
-  arrange(n, desc(gov_trust_high), desc(gov_trust_low), desc(gov_trust))
+# cormat <- round(cor(combined_heatmap, use = "pairwise.complete.obs"),3)
+# 
+# combined_heatmap %>% 
+#   mutate_all(is.na) %>% 
+#   summarize_all(sum) %>% 
+#   t() %>% 
+#   as.data.frame() %>% 
+#   rownames_to_column("cor_with") %>% 
+#   rename(n = V1) -> n_values
+# 
+# cormat %>% 
+#   as.data.frame() %>% 
+#   select(polity10, gov_trust:gov_trust_high) %>% 
+#   rownames_to_column("cor_with") %>% 
+#   left_join(n_values) %>% 
+#   filter(abs(polity10) < .5 &
+#          (abs(gov_trust) > 0.05 | 
+#            abs(gov_trust_low) > 0.05 | 
+#            abs(gov_trust_high) > 0.05)) %>% 
+#   arrange(n, desc(gov_trust_high), desc(gov_trust_low), desc(gov_trust))
 
 # urbanratio10
 # lifeexp10.y
@@ -211,7 +211,7 @@ macro %>%
   ggpubr::stat_cor(color = "black", label.x.npc = "left", label.y.npc = "top", show.legend = F) 
 
 
-ggsave(filename = "images/delib_polity.png", width = 12, height = 8)
+ggsave(filename = "text/images/delib_polity.png", width = 12, height = 6)
 ```
 
 
@@ -295,7 +295,7 @@ macro %>%
 
 cowplot::plot_grid(p1, p2, nrow = 1, rel_widths = c(6/10, 4/10))
 
-ggsave(filename = "images/doubleplot.png", width = 12, height = 8)
+ggsave(filename = "text/images/doubleplot.png", width = 12, height = 6)
 ```
 
 # Figure 5: Regime Support by Freedom of Discussion
@@ -329,7 +329,7 @@ macro %>%
   theme(axis.title=element_text(size = 10)) +
   ggpubr::stat_cor(color = "black") 
 
-ggsave(filename = "images/regimesupport_fod.png", width = 12, height = 8)
+ggsave(filename = "text/images/regimesupport_fod.png", width = 12, height = 6)
 
 
 ```

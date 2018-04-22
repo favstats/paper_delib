@@ -104,13 +104,17 @@ Table A3: Operationalization of Regime Support
 
 ```{r}
 htmltools::includeHTML("tables/regime_support.htm")
-
-
-
-
 ```
+<br>
+<br>
+<center>
+Table A4: Factor Analysis
+<center>
 
-
+```{r}
+htmltools::includeHTML("tables/factor_analysis.html")
+```
+Varimax Rotation
 
 Control Variables {data-navmenu="Operationalization and Descriptives"}
 =========================================
@@ -120,7 +124,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A4: Control Variables
+Table A5: Control Variables
 <center>
 
 ```{r}
@@ -167,7 +171,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A5: Complete Sample: Statistical models A1.1 to F1.3
+Table A6: Complete Sample: Statistical models A1.1 to F1.3
 <center>
 
 
@@ -229,7 +233,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A6: Complete Sample (including Polity/FH dummies): Statistical models A1.4 to F1.6
+Table A7: Complete Sample (including Polity/FH dummies): Statistical models A1.4 to F1.6
 <center>
 
 
@@ -298,7 +302,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A7: Democracy Sample: Statistical models A2.1 to F2.2
+Table A8: Democracy Sample: Statistical models A2.1 to F2.2
 <center>
 
 
@@ -359,7 +363,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A8: Non-Democracies Sample: Statistical models A3.1 to F3.3
+Table A9: Non-Democracies Sample: Statistical models A3.1 to F3.3
 <center>
 
 ```{r}
@@ -425,7 +429,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A9: Non-Democracies Sample (including Polity/FH): Statistical models A3.4 to F3.6
+Table A10: Non-Democracies Sample (including Polity/FH): Statistical models A3.4 to F3.6
 <center>
 
 
@@ -490,7 +494,7 @@ Column {.tabset .tabset-fade}
 -------------------------------------
 
 <center>
-Table A10: Polity/FH: Statistical models P1.1 to P.3.3
+Table A11: Polity/FH: Statistical models P1.1 to P.3.3
 <center>
 
 
