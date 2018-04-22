@@ -550,7 +550,7 @@ multilevels_high <- function(delibs, ...) {
 multilevels_no_c <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -561,7 +561,7 @@ multilevels_no_c <- function(delibs, ...) {
 multilevels_low_c <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_low ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -570,7 +570,7 @@ multilevels_low_c <- function(delibs, ...) {
 multilevels_high_c <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_high ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -579,7 +579,7 @@ multilevels_high_c <- function(delibs, ...) {
 multilevels_no_c_dem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight, ...)
   return(result)
@@ -588,7 +588,7 @@ multilevels_no_c_dem <- function(delibs, ...) {
 multilevels_no_c_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -597,7 +597,7 @@ multilevels_no_c_nondem <- function(delibs, ...) {
 multilevels_low_c_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_low ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -607,7 +607,7 @@ multilevels_low_c_nondem <- function(delibs, ...) {
 multilevels_high_c_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_high ~ income + educ + 
                               work + age + sex + i +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -620,7 +620,7 @@ multilevels_high_c_nondem <- function(delibs, ...) {
 multilevels_no_pol <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i + polity_demdummy + polity_autodummy +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -629,7 +629,7 @@ multilevels_no_pol <- function(delibs, ...) {
 multilevels_low_pol <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_low ~ income + educ + 
                               work + age + sex + i + polity_demdummy + polity_autodummy +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -638,7 +638,7 @@ multilevels_low_pol <- function(delibs, ...) {
 multilevels_high_pol <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_high ~ income + educ + 
                               work + age + sex + i + polity_demdummy + polity_autodummy +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)
@@ -649,7 +649,7 @@ multilevels_high_pol <- function(delibs, ...) {
 multilevels_no_pol_dem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i + polity10 +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_dem, weights = weight, ...)
   return(result)
@@ -658,7 +658,7 @@ multilevels_no_pol_dem <- function(delibs, ...) {
 multilevels_no_pol_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i + polity10 +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -667,7 +667,7 @@ multilevels_no_pol_nondem <- function(delibs, ...) {
 multilevels_low_pol_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_low ~ income + educ + 
                               work + age + sex + i + polity10 +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -677,7 +677,7 @@ multilevels_low_pol_nondem <- function(delibs, ...) {
 multilevels_high_pol_nondem <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust_high ~ income + educ + 
                               work + age + sex + i + polity10 +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined_nondem, weights = weight, ...)
   return(result)
@@ -689,7 +689,7 @@ multilevels_high_pol_nondem <- function(delibs, ...) {
 multilevels_no_pol <- function(delibs, ...) {
   result <- lmer(substitute(gov_trust ~ income + educ + 
                               work + age + sex + i + polity_demdummy + polity_autodummy +
-                              pop10 + gdp10 + lifeexp10 + corrupt10 + urbanratio10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
                               (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
   return(result)

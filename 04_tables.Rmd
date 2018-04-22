@@ -191,6 +191,9 @@ print(weigh_table_latex, booktabs = T)
 # Summary Statistics
 
 ```{r}
+library(tableHTML)
+
+load("data/macro.Rdata")
 
 rbind(
 
@@ -202,14 +205,14 @@ sjmisc::descr() %>%
   mutate(n = round(n)) %>% 
   mutate_at(vars(mean:kurtosis), ~sprintf('%.2f', ., 2)) %>% 
   mutate(variable = c(
-                      "\\textit{Financial Security}",
-                      "\\textit{Education}", 
-                      "\\textit{Age}", 
-                      "\\textit{Employment (0/1)}", 
-                      "\\textit{Sex (Male/Female)}",
-                      "\\textit{Regime Support (No Bias)}",
-                      "\\textit{Regime Support (Low Bias)}", 
-                      "\\textit{Regime Support (High Bias)}"
+                      "Financial Security",
+                      "Education", 
+                      "Age", 
+                      "Employment (0/1)", 
+                      "Sex (Male/Female)",
+                      "Regime Support (No Bias)",
+                      "Regime Support (Low Bias)", 
+                      "Regime Support (High Bias)"
                       )),
 
 
@@ -223,30 +226,39 @@ sjmisc::descr() %>%
   mutate(n = round(n)) %>% 
   mutate_at(vars(mean:kurtosis), ~sprintf('%.2f', ., 2)) %>% 
   mutate(variable = c(
-                      "\\textit{DCI}",
-                      "\\textit{Reasoned Justification}", 
-                      "\\textit{Common Good}", 
-                      "\\textit{Counter-Arguments}", 
-                      "\\textit{Range of Consultation}",
-                      "\\textit{Engaged Society}",
-                      "\\textit{Polity/FH}", 
-                      "\\textit{Life Expectancy}",
-                      "\\textit{logged Population}",
-                      "\\textit{logged GDP per Capita}",
-                      "\\textit{Corruption}",
-                      "\\textit{Urban Population Ratio}",
-                      "\\textit{Democracy dummy}",
-                      "\\textit{Anocracy dummy}",
-                      "\\textit{Autocracy dummy}"
+                      "DCI",
+                      "Reasoned Justification", 
+                      "Common Good", 
+                      "Counter-Arguments", 
+                      "Range of Consultation",
+                      "Engaged Society",
+                      "Polity/FH", 
+                      "Life Expectancy",
+                      "logged Population",
+                      "logged GDP per Capita",
+                      "Corruption",
+                      "Urban Population Ratio",
+                      "Democracy (0/1)",
+                      "Anocracy (0/1)",
+                      "Autocracy (0/1)"
                       ))
 
 ) %>% 
-  xtable() %>% 
-  print(., booktable =T)
+  rename(Variable = variable, 
+         N = n,
+         Mean = mean,
+         SD = sd,
+         Median = md,
+         Min = min,
+         Max = max,
+         Skew = skew,
+         Kurtosis = kurtosis) -> html_summary 
+  
+save(html_summary, file = "data/html_summary.Rdata")
+
 
 
  
-
 
 
 
@@ -260,6 +272,27 @@ sjmisc::descr() %>%
 
 
 ```
+
+# countries
+
+```{r}
+
+load("data/macro.Rdata")
+
+macro %>% 
+  mutate(`ISO Code` = countrycode(cntry, "country.name", "iso3c")) %>% 
+  mutate(Country = cntry) %>% 
+  mutate(`Nr.` = 1:n()) %>% 
+  select(Country, `ISO Code`, `Nr.`) -> country_table
+
+
+save(country_table, file = "data/country_table.Rdata")
+
+
+  # knitr::kable()
+
+```
+
 
 
 

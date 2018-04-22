@@ -1,0 +1,41 @@
+<style type="text/css">
+
+td{font-family:Arial, sans-serif;font-size:11.5px;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-top-width:1px;border-bottom-width:1px;border-color:#999;color:#444;background-color:#F7FDFA;}
+th{font-family:Arial, sans-serif;font-size:11.5px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-top-width:1px;border-bottom-width:1px;border-color:#fff;color:#fff;background-color:#26ADE4;}
+table{
+    width:1%;
+	white-space: nowrap
+	overflow: hidden; <!-- Available options: visible, hidden, scroll, auto -->
+}
+</style>
+
+<center>
+Table A1: Summary of Statistics
+<center>
+
+<table border=1>
+<tr> <th>  </th> <th> variable </th> <th> n </th> <th> mean </th> <th> sd </th> <th> md </th> <th> min </th> <th> max </th> <th> skew </th> <th> kurtosis </th>  </tr>
+  <tr> <td align="right"> 1 </td> <td> <i>Financial Security<i> </td> <td align="right"> 316938.00 </td> <td> 0.49 </td> <td> 0.29 </td> <td> 0.50 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.02 </td> <td> -0.80 </td> </tr>
+  <tr> <td align="right"> 2 </td> <td> <i>Education<i> </td> <td align="right"> 316938.00 </td> <td> 0.49 </td> <td> 0.28 </td> <td> 0.50 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.05 </td> <td> -0.84 </td> </tr>
+  <tr> <td align="right"> 3 </td> <td> <i>Age<i> </td> <td align="right"> 316938.00 </td> <td> 0.28 </td> <td> 0.18 </td> <td> 0.25 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.57 </td> <td> -0.50 </td> </tr>
+  <tr> <td align="right"> 4 </td> <td> <i>Employment (0/1)<i> </td> <td align="right"> 316938.00 </td> <td> 0.52 </td> <td> 0.50 </td> <td> 1.00 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.08 </td> <td> -1.99 </td> </tr>
+  <tr> <td align="right"> 5 </td> <td> <i>Sex (Male/Female)<i> </td> <td align="right"> 316938.00 </td> <td> 0.50 </td> <td> 0.50 </td> <td> 1.00 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.02 </td> <td> -2.00 </td> </tr>
+  <tr> <td align="right"> 6 </td> <td> <i>Regime Support (No Bias)<i> </td> <td align="right"> 316938.00 </td> <td> 0.48 </td> <td> 0.26 </td> <td> 0.49 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.04 </td> <td> -0.69 </td> </tr>
+  <tr> <td align="right"> 7 </td> <td> <i>Regime Support (Low Bias)<i> </td> <td align="right"> 316938.00 </td> <td> 0.47 </td> <td> 0.26 </td> <td> 0.48 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.02 </td> <td> -0.67 </td> </tr>
+  <tr> <td align="right"> 8 </td> <td> <i>Regime Support (High Bias)<i> </td> <td align="right"> 316938.00 </td> <td> 0.47 </td> <td> 0.25 </td> <td> 0.47 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.05 </td> <td> -0.62 </td> </tr>
+  <tr> <td align="right"> 9 </td> <td> <i>DCI<i> </td> <td align="right"> 119.00 </td> <td> 0.71 </td> <td> 0.24 </td> <td> 0.78 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -1.11 </td> <td> 0.66 </td> </tr>
+  <tr> <td align="right"> 10 </td> <td> <i>Reasoned Justification<i> </td> <td align="right"> 119.00 </td> <td> 0.55 </td> <td> 0.21 </td> <td> 0.56 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.18 </td> <td> -0.38 </td> </tr>
+  <tr> <td align="right"> 11 </td> <td> <i>Common Good<i> </td> <td align="right"> 119.00 </td> <td> 0.60 </td> <td> 0.21 </td> <td> 0.63 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.56 </td> <td> -0.01 </td> </tr>
+  <tr> <td align="right"> 12 </td> <td> <i>Counter-Arguments<i> </td> <td align="right"> 119.00 </td> <td> 0.59 </td> <td> 0.22 </td> <td> 0.62 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.53 </td> <td> -0.23 </td> </tr>
+  <tr> <td align="right"> 13 </td> <td> <i>Range of Consultation<i> </td> <td align="right"> 119.00 </td> <td> 0.49 </td> <td> 0.19 </td> <td> 0.50 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.22 </td> <td> 0.00 </td> </tr>
+  <tr> <td align="right"> 14 </td> <td> <i>Engaged Society<i> </td> <td align="right"> 119.00 </td> <td> 0.55 </td> <td> 0.21 </td> <td> 0.59 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.53 </td> <td> 0.12 </td> </tr>
+  <tr> <td align="right"> 15 </td> <td> <i>Polity/FH<i> </td> <td align="right"> 119.00 </td> <td> 0.68 </td> <td> 0.30 </td> <td> 0.78 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.73 </td> <td> -0.74 </td> </tr>
+  <tr> <td align="right"> 16 </td> <td> <i>Life Expectancy<i> </td> <td align="right"> 119.00 </td> <td> 0.65 </td> <td> 0.26 </td> <td> 0.74 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.72 </td> <td> -0.61 </td> </tr>
+  <tr> <td align="right"> 17 </td> <td> <i>logged Population<i> </td> <td align="right"> 119.00 </td> <td> 0.04 </td> <td> 0.12 </td> <td> 0.01 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 6.61 </td> <td> 45.46 </td> </tr>
+  <tr> <td align="right"> 18 </td> <td> <i>logged GDP per Capita<i> </td> <td align="right"> 119.00 </td> <td> 0.13 </td> <td> 0.16 </td> <td> 0.06 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 2.22 </td> <td> 7.30 </td> </tr>
+  <tr> <td align="right"> 19 </td> <td> <i>Corruption<i> </td> <td align="right"> 119.00 </td> <td> 0.65 </td> <td> 0.27 </td> <td> 0.74 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.83 </td> <td> -0.41 </td> </tr>
+  <tr> <td align="right"> 20 </td> <td> <i>Urban Population Ratio<i> </td> <td align="right"> 119.00 </td> <td> 0.02 </td> <td> 0.09 </td> <td> 0.02 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 10.54 </td> <td> 110.75 </td> </tr>
+  <tr> <td align="right"> 21 </td> <td> <i>Democracy (0/1)<i> </td> <td align="right"> 119.00 </td> <td> 0.54 </td> <td> 0.50 </td> <td> 1.00 </td> <td> 0.00 </td> <td> 1.00 </td> <td> -0.15 </td> <td> -1.99 </td> </tr>
+  <tr> <td align="right"> 22 </td> <td> <i>Anocracy (0/1)<i> </td> <td align="right"> 119.00 </td> <td> 0.39 </td> <td> 0.49 </td> <td> 0.00 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 0.42 </td> <td> -1.84 </td> </tr>
+  <tr> <td align="right"> 23 </td> <td> <i>Autocracy (0/1)<i> </td> <td align="right"> 119.00 </td> <td> 0.07 </td> <td> 0.25 </td> <td> 0.00 </td> <td> 0.00 </td> <td> 1.00 </td> <td> 3.41 </td> <td> 9.73 </td> </tr>
+   </table>

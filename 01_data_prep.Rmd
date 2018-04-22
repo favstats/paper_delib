@@ -1251,11 +1251,11 @@ vdem <- vdems_start %>%
                  value.var=c("e_mipopula")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%
-  mutate(corruption10 = vdems_sub %>% 
-           dcast(country_name ~ year, 
-                 value.var=c("v2x_corr")) %>%
-           select(`2000`:`2010`) %>%
-           rowMeans) %>%
+  # mutate(corruption10 = vdems_sub %>% 
+  #          dcast(country_name ~ year, 
+  #                value.var=c("v2x_corr")) %>%
+  #          select(`2000`:`2010`) %>%
+           # rowMeans) %>%
   mutate(polkill10 = vdems_sub %>% 
            dcast(country_name ~ year, 
                  value.var=c("v2x_clphy")) %>%
@@ -1301,11 +1301,11 @@ vdem <- vdems_start %>%
                  value.var=c("v2pehealth")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%  
-     mutate(controlcorruption10 = vdems_sub %>% 
-           dcast(country_name ~ year, 
-                 value.var=c("e_wbgi_cce")) %>%
-           select(`2000`:`2010`) %>%
-           rowMeans) %>%  
+     # mutate(controlcorruption10 = vdems_sub %>% 
+     #       dcast(country_name ~ year, 
+     #             value.var=c("e_wbgi_cce")) %>%
+     #       select(`2000`:`2010`) %>%
+     #       rowMeans) %>%  
      mutate(eff10 = vdems_sub %>% 
            dcast(country_name ~ year, 
                  value.var=c("e_wbgi_gee")) %>%
@@ -1411,12 +1411,12 @@ qog10 <- qog %>%
           fun.aggregate = mean) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>% 
-  mutate(corrupt10 = qog10 %>%
-           dcast(cntry ~ year, 
-                 value.var = c("bci_bci"), 
-          fun.aggregate = mean) %>%
-           select(`2000`:`2010`) %>%
-           rowMeans) %>% 
+  # mutate(corrupt10 = qog10 %>%
+  #          dcast(cntry ~ year, 
+  #                value.var = c("bci_bci"), 
+  #         fun.aggregate = mean) %>%
+  #          select(`2000`:`2010`) %>%
+           # rowMeans) %>% 
   mutate(lifeexp10 = qog10 %>%
            dcast(cntry ~ year, 
                  value.var = c("ihme_lebs0001"), 
@@ -1530,6 +1530,8 @@ level2
 
 ```{r}
 # load("data/level1.Rdata")
+# load("data/level2.Rdata")
+# load(vdems_start_url)
 
 combined <- merge(x = merged, y = level2, by = "cntry") %>% 
               mutate(cntryears = paste(cntry, year))
@@ -1587,11 +1589,12 @@ combined <- combined %>%
                       discuss_round == 2 ~ gov_trust * .8,
                       discuss_round == 1 ~ gov_trust * .75,
                       discuss_round %in% c(3,4) ~ gov_trust)) %>% 
-                mutate(urbanratio10 = ifelse(is.na(urbanratio10), urbanpop10, urbanratio10)) %>% 
+                mutate(urbanratio10 = ifelse(is.na(urbanratio10), 
+                                             urbanpop10/100, urbanratio10)) %>% 
                 mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
                 select(cntry, year, gov_trust, gov_trust_low, gov_trust_high, age:ESS, delib10:engage10, polity10,
                        pol_round, polity_demdummy, polity_anodummy, polity_autodummy, polity_autodummy,
-                       regime, discuss, discuss_round, gdp10, corrupt10, lifeexp10, pop10, 
+                       regime, discuss, discuss_round, gdp10, lifeexp10, pop10, 
                        poly10, riw10, unified_dem10, urbanratio10, weight) %>% 
   na.omit() %>% 
   mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01)
@@ -1600,6 +1603,7 @@ combined <- combined %>%
 
 save(combined, file = "data/combined.Rdata")
 
+# hist(combined$urbanratio10)
 ```
 
 
@@ -1619,14 +1623,15 @@ macro  <- combined %>%
                   ) %>% 
                 merge(level2, by = "cntry") %>% 
                 zap_inf() %>% 
-                mutate(urbanratio10 = ifelse(is.na(urbanratio10), urbanpop10, urbanratio10)) %>% 
+                mutate(urbanratio10 = ifelse(is.na(urbanratio10),
+                                             urbanpop10/100, urbanratio10)) %>% 
                 mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
                 select(cntry, mean_gov, mean_gov_low, mean_gov_high, 
                        delib10:polity10, 
                        pol_round, polity_demdummy, polity_anodummy, 
                        polity_autodummy, polity_autodummy,
                        regime, discuss, #discuss_round, 
-                       gdp10, corrupt10, lifeexp10, pop10, 
+                       gdp10, lifeexp10, pop10, 
                        poly10, riw10, unified_dem10, urbanratio10) %>% 
                 drop_na(mean_gov) %>% 
                 mutate(count_na = apply(., 1, count_na)) %>% 
