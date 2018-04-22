@@ -1,6 +1,6 @@
 # Deliberation Across the World
 
-## A Cross-National Examination of the Link Between Deliberation and Regime Legitimacy
+**A Cross-National Examination of the Link Between Deliberation and Regime Legitimacy**
 
 **Authors: Rosa Seitz and Fabio Votta**
 
