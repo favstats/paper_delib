@@ -159,6 +159,93 @@ cite_corr(delib_indicator = "delib10", sample = "complete")
 
 ```
 
+# FoD Corr
+
+
+```{r}
+
+
+combined %>% 
+  select(delib10:engage10, discuss) %>% 
+  mutate_all(as.numeric) -> combined_all_table
+
+cormat_all <- round(cor(combined_all_table, use = "pairwise.complete.obs"),3)
+
+combined %>% 
+  filter(regime == "demo") %>% 
+  select(delib10:engage10, discuss) %>% 
+  mutate_all(as.numeric) -> combined_demo_table
+
+cormat_dem <- round(cor(combined_demo_table, use = "pairwise.complete.obs"),3)
+
+combined %>% 
+  filter(regime != "demo") %>% 
+  select(delib10:engage10, discuss) %>% 
+  mutate_all(as.numeric) -> combined_nondemo_table
+
+cormat_nondem <- round(cor(combined_nondemo_table, use = "pairwise.complete.obs"),3)
+
+
+rbind(
+cormat_all %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "discuss") %>% 
+  mutate(cor_with = paste0("Complete Data (n=", nrow(combined %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:discuss), make_bold) %>% 
+  mutate_at(vars(delib10:discuss), make_italic),
+
+
+cormat_dem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "discuss") %>% 
+  mutate(cor_with = paste0("Democracies (n=", nrow(combined %>% 
+                                                      filter(regime == "demo") %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:discuss), make_bold) %>% 
+  mutate_at(vars(delib10:discuss), make_italic),
+
+
+
+cormat_nondem %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cor_with") %>% 
+  filter(cor_with == "discuss") %>% 
+  mutate(cor_with = paste0("Non-Democracies (n=", nrow(combined %>% 
+                                                      filter(regime != "demo") %>% 
+                                                      select(cntry) %>% 
+                                                      unique), ")")) %>% 
+  mutate_at(vars(delib10:discuss), make_bold) %>% 
+  mutate_at(vars(delib10:discuss), make_italic)
+) -> combined_table
+
+combined_table %<>% 
+  column_to_rownames("cor_with") %>% 
+  select(delib10, reason10, common10, countr10, consult10, engage10, discuss)
+colnames(combined_table) <- c("\\textbf{DCI}", 
+                              "\\textbf{RJ}", 
+                              "\\textbf{CG}", 
+                              "\\textbf{CA}", 
+                              "\\textbf{RoC}", 
+                              "\\textbf{ES}", 
+                              "\\textbf{Freedom of Discussion}") 
+
+library(xtable)
+combined_latex <- xtable(combined_table)
+
+print(combined_latex, booktabs = T)
+
+load("data/macro.Rdata")
+macro %>% 
+#  filter(polity_demdummy != 1) %>% 
+  select(mean_gov_high, discuss) %>% 
+cor()
+```
+
 
 # Weighting
 

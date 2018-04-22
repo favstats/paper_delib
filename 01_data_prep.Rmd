@@ -1090,6 +1090,7 @@ table(merged$ESS)
 
 ```{r}
 #TODO todor::
+# load("data/level1.Rdata")
 
 merged %>% 
   select(trust_gov, trust_parliament, 
@@ -1102,11 +1103,11 @@ merged %>%
   psych::KMO()
 
 
-merged %<>% 
+merged %>% 
   select(trust_gov, trust_parliament, 
            trust_police, trust_courts) %>% 
   mutate_all(as.numeric) %>% 
-  psych::fa(weight = merged$weight) %>% 
+  psych::fa(weight = merged$weight, 2) %>% 
   psych::predict.psych(data = merged %>% 
   select(trust_gov, trust_parliament, 
            trust_police, trust_courts)) %>%

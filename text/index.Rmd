@@ -13,6 +13,7 @@ bibliography: references.bib
 #cls: systats.cls
 csl: apa.csl
 link-citations: yes
+fontsize: 11pt
 ---
 
 
@@ -40,7 +41,7 @@ knitr::opts_chunk$set(echo = F)
 ```
 
 
-\section{Empirical Section} \label{methods}
+\section{Empirical Section} \label{empirical}
 
 ```{r child = '3_methods.Rmd'}
 ```

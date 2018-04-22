@@ -688,6 +688,8 @@ save(estimates_data, file = "text/data/estimate_data.Rdata")
 ## needed functions
 
 ```{r}
+load("text/data/estimate_data.Rdata")
+
 GeomPointrange$draw_key <-  function (data, params, size)     {
 
          draw_key_vpath <- function (data, params, size) {
@@ -749,7 +751,7 @@ controls_plot %>%
   geom_text(aes(x = term,
                 y =  -.23,
                 label = model),
-            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray20") +
   # geom_text(data = with_controls_icc, 
   #           aes(x = term, 
   #               y =  0.25,
@@ -867,7 +869,7 @@ with_pols_dat %>%
   geom_text(data = with_pols_dat_delibs, aes(x = term,
                 y =  -.23,
                 label = model),
-            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
   # ggrepel::geom_text_repel(data = anovies_pols,
   #           aes(x = term,
   #               y =  -0.23,
@@ -1005,7 +1007,7 @@ controls_plot_dem %>%
   geom_text(aes(x = term,
                 y =  -.23,
                 label = model),
-            show.legend = F, nudge_x = 0.25, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.25, size = 2.5, color = "gray20") +
   # geom_text(data = with_controls_icc, 
   #           aes(x = term, 
   #               y =  0.25,
@@ -1115,7 +1117,7 @@ with_pols_dat_dem %>%
   geom_text(data = with_pols_dat_delibs_dem, aes(x = term,
                 y =  -.23,
                 label = model),
-            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
   # ggrepel::geom_text_repel(data = anovies_pols_dem,
   #           aes(x = term,
   #               y =  -0.23,
@@ -1249,7 +1251,7 @@ controls_plot_nondem %>%
   geom_text(aes(x = term,
                 y =  -.32,
                 label = model),
-            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.4, size = 2.5, color = "gray20") +
   # geom_text(data = with_controls_icc, 
   #           aes(x = term, 
   #               y =  0.25,
@@ -1357,7 +1359,7 @@ with_pols_dat_nondem %>%
   geom_text(data = with_pols_dat_delibs_nondem, aes(x = term,
                 y =  -.32,
                 label = model),
-            show.legend = F, nudge_x = 0.69, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.69, size = 2.5, color = "gray20") +
   # ggrepel::geom_text_repel(data = anovies_pols_nondem,
   #           aes(x = term,
   #               y =  -0.23,
@@ -1490,7 +1492,7 @@ just_pols_dat %>%
   geom_text(aes(x = term,
                 y =  -.05,
                 label = model),
-            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
   ggthemes::theme_hc() +
   # ggthemes::scale_colour_gdocs() +
   scale_color_manual("Dependent Variable", 
@@ -1555,7 +1557,7 @@ just_pols_dat_dem %>%
   geom_text(aes(x = term,
                 y =  -.05,
                 label = model),
-            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
   ggthemes::theme_hc() +
   # ggthemes::scale_colour_gdocs() +
   scale_color_manual("Dependent Variable", 
@@ -1610,7 +1612,7 @@ just_pols_dat_nondem %>%
   geom_text(aes(x = term,
                 y =  -.05,
                 label = model),
-            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray") +
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
   ggthemes::theme_hc() +
   # ggthemes::scale_colour_gdocs() +
   scale_color_manual("Dependent Variable", 
