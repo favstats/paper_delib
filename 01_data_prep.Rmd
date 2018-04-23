@@ -1103,11 +1103,12 @@ merged %>%
   psych::KMO()
 
 
-merged %>% 
+
+merged %<>% 
   select(trust_gov, trust_parliament, 
            trust_police, trust_courts) %>% 
-  mutate_all(as.numeric) %>% 
-  psych::fa(weight = merged$weight, 2) %>% 
+  mutate_all(as.numeric) %<>% 
+  psych::fa(weight = merged$weight) %>% 
   psych::predict.psych(data = merged %>% 
   select(trust_gov, trust_parliament, 
            trust_police, trust_courts)) %>%

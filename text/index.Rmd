@@ -55,12 +55,13 @@ knitr::opts_chunk$set(echo = F)
 
 
 \setstretch{1}
+\normalsize
 
 \clearpage
 \newpage
 
 
-# References
+# References{-}
 \thispagestyle{plain}
 \setlength{\parindent}{-0.2in}
 \setlength{\leftskip}{0.2in}
