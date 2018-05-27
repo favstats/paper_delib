@@ -1,8 +1,8 @@
 ---
 title: "Deliberation Across the World"
-subtitle: "Examining the Link Between <br> Regime Legitimacy and Deliberation"
-author: "Rosa Seitz & Fabio Votta"
-date: "2018/06/05 <br> <br> Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com/ </a>"
+subtitle: "Examining the Link Between <br> Regime Legitimacy and Deliberation <br> <br> Rosa Seitz^[] & Fabio Votta^[] <br> <br> 2018/06/05"
+author: "<br> <sup>1</sup> E-Mail: fabio.votta@gmail.com <br> <sup>2</sup> E-Mail: rosa.marie.seitz@gmail.com"
+date: "Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com/ </a>"
 output:
   xaringan::moon_reader:
     lib_dir: libs
@@ -13,6 +13,7 @@ output:
       countIncrementalSlides: false
 ---
 
+    
 
 ```{r xaringan-themer, include = FALSE}
 library(xaringanthemer)
@@ -314,11 +315,14 @@ class: inverse, center, middle
 
 ## Thanks for Listening!
 
+Full Paper: <a href='https://www.academia.edu/36656020/Deliberation_Across_the_World_A_Cross-National_Examination_of_the_Link_Between_Deliberation_and_Regime_Legitimacy'>Deliberation Across the World</a>
+
 Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com </a>
 
 Online Appendix can be found <a href='https://favstats.github.io/delib_mod_database'>here</a>
 
 Code and Data on <a href='https://github.com/favstats/paper_delib'>GitHub</a>
+
 
 ---
 
