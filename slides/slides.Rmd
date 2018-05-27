@@ -1,0 +1,400 @@
+---
+title: "Deliberation Across the World"
+subtitle: "Examining the Link Between <br> Regime Legitimacy and Deliberation"
+author: "Rosa Seitz & Fabio Votta"
+date: "2018/06/05 <br> <br> Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com/ </a>"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: xaringan-themer.css
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+# mono_accent(base_color = "#252525", link_color	= "rgb(198, 219, 239)")
+```
+
+<style>
+.onehundredtwenty {
+  font-size: 120%;
+   }
+
+<style>
+.ninety {
+  font-size: 90%;
+   }
+
+.eightyfive {
+  font-size: 85%;
+   }
+   
+.eighty {
+  font-size: 80%;
+   }
+   
+.seventyfive {
+  font-size: 75%;
+   }
+   
+.seventy {
+  font-size: 70%;
+   }
+</style>
+
+
+```{r setup, echo = F, include=F}
+# include=FALSE
+options(htmltools.dir.version = FALSE)
+
+pacman::p_load(dplyr, ggplot2, googlesheets, openxlsx, stringr, rvest, dplyr, ggplot2, keras, mlrMBO, tidyMBO, ggthemes, Smisc, randomForest, parallelMap, emoa, xaringan, tidyTX, d3heatmap)
+
+knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
+
+```
+
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+.onehundredtwenty[
+
+Research Question:
+
+> What role does deliberation play for regime legitimacy across the world? 
+
+]
+
+
+
+---
+
+## Outline
+
+.onehundredtwenty[
+
+1. Theoretical Underpinnings
+2. Data
+3. Challenges
+4. Analysis & Results
+5. Conclusions & Future Research
+
+]
+
+
+---
+
+class: inverse, center, middle
+
+## Theoretical Link between <br> Deliberation and Regime Legitimacy 
+
+
+---
+
+## Theory
+
++ Central claim of deliberative theory: 
+    + making it possible to arrive at (more) legitimate desicions
+
+
+--
++ Conceptualization of legitimacy as regime support 
+
+
+--
++ General assumption: Deliberative qualities of a political system increase support from its citizens
+
+
+--
++ *Authoritarian deliberation*: Might decrease support due to increasing democratic capabilites
+
+
+
+---
+
+class: inverse, center, middle
+
+
+## Data
+
+
+---
+
+## Data
+
+**Individual-Level Data**
++ Merging of the following datasets: 
+  + Afrobarometer Survey, Round 5 and Round 6 (data from 2011-2015)  
+  + Asian Barometer Survey, Wave 3 and Wave 4 (2010-2015) 
+  + AmericasBarometer (2010-2014) 
+  + European Social Survey, Round 6 (2012) 
+  + Latinobarómetro (2015) 
+  + World Values Survey (2010-2014)
+
++ In total 316,938 individual cases in 119 Countries
+
+
+--
+
+**Country-Level Data**
++ "Varieties of Democracy"-Dataset: Deliberative Component Index
++ Control variables come from V-Dem and the QoG-Dataset
+
+---
+
+## Deliberative Component Index (DCI)?
+
++ short description?
++ Table with five components?
+
+<center>
+<img src="images/dci_table.png">
+</center>
+
+
+---
+
+## World Maps
+
+<center>
+<img src="images/map3.png" height="470">
+</center>
+
+---
+
+class: inverse, center, middle
+
+
+## Challenges
+
+---
+
+## Challenges
+
+*Two major challenges emerged:*
+
++ Colinearity between Deliberation indicators and Democracy Measures
+
+--
+
++ Possibly biased self-reported regime support 
+
+--
+
+<br>
+
+#### Multicolinearity issue
+
+
+```{r}
+htmltools::includeHTML("tables/corr_tab.html")
+```
+
+
+---
+
+#### Correlation between DCI and Polity/FH
+
+
+<center>
+<img src="images/delib_polity.png">
+</center>
+
+
+
+---
+
+
+#### Possibly biased self-reported Regime Support 
+
+
+<img src="images/doubleplot.png">
+
+
+---
+
+#### Correlation between Regime Support and Discussion Suppression 
+
+
+<img src="images/regimesupport_fod.png">
+
+
+---
+
+#### Weighting of Regime Support
+
+<br>
+
+
+<img src="images/weight.png">
+
+---
+
+class: inverse, center, middle
+
+
+## Analysis & Results
+
+---
+
+#### Analysis
+
+.eightyfive[
+
++ Multilevel Models
+    + In total 91 seperate models
+    + DVs: Regime Support (No, Low, High Bias)
+    + Main IVs: All six Deliberation indicators
+
++ Control Variables
+    + Micro Level
+        + Age
+        + Sex (Male/Female)
+        + Financial Security
+        + Education
+        + Employment (0/1)
+    + Macro Level
+        + Polity/FH
+        + Democracy (0/1)
+        + Autocracy (0/1)
+        + logged GDP per capita
+        + logged Population
+        + Life Expectancy
+        + Urban Pop. Ratio
+    + Survey dummies
+        + WVS, Afrobarometer, Latinobarometro, Americasbarometer, Asianbarometer, ESS
+        
+]
+
+---
+
+## Results
+
+
+<img src="images/slides_coefplot.png">
+
+
+---
+
+class: inverse, center, middle
+
+## Conclusions & Future Research
+
+---
+
+## Conclusions & Future Research
+
+* No simple answer to research question
+ + deliberation seems to have a positive effect on regime support in democracies
+ + less robust and ambiguous results for non-democracies and complete sample
+    
+    
+* Presumably biased regime support
+ + should be taken into account 
+ + possible remedies? (e.g. weighting procedures, survey design)
+
+* Validity of the DCI
+    + more sensitive approaches to measure deliberation on the country level are neccessary
+    + nevertheless interesting differences regarding the subsamples
+
+---
+
+class: inverse, center, middle
+
+
+## Thanks for Listening!
+
+Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com </a>
+
+Online Appendix can be found <a href='https://favstats.github.io/delib_mod_database'>here</a>
+
+Code and Data on <a href='https://github.com/favstats/paper_delib'>GitHub</a>
+
+---
+
+## References
+
+Hawley, G. (2017). Making Sense of the Alt-right. Columbia University Press.
+
+Marwick, A., & Lewis, R. (2017). Media manipulation and disinformation online. New York: Data & Society Research Institute.
+
+
+
+---
+
+class: inverse, center, middle
+
+## Appendix
+
+---
+
+### Maps - Deliberation
+
+<img src="images/map_dci.png">
+
+---
+
+### Maps - Regime Support
+
+<img src="images/map_regime.png">
+
+---
+
+### Coefficent Plots - Complete Sample
+
+<img src="images/coefplot.png">
+
+---
+
+### Coefficent Plots - Democracy Sample
+
+<img src="images/coefplot_dem.png">
+
+---
+
+### Coefficent Plots - Non-Democracy Sample
+
+<img src="images/coefplot_nondem.png">
+
+---
+
+### Model Comparisons
+
+<br>
+<br>
+
+<img src="images/model_comparison.png">
+
+---
+
+### Model Comparisons
+
+<br>
+<br>
+
+<img src="images/model_comparison_dem.png">
+
+---
+
+### Model Comparisons
+
+<br>
+<br>
+
+<img src="images/model_comparison_nondem.png">
+
+
+---
+
+
+

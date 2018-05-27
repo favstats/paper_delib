@@ -3,10 +3,6 @@ title: "Dataviz"
 output: html_notebook
 ---
 
-ToDo
-Control Variables Table
-TABLES?
-WRITE IT UP
 
 # Loading the Packages
 
@@ -18,7 +14,7 @@ p_load(tidyverse, haven,sjmisc,
                      forcats, weights, car,
                      countrycode, reshape2, 
                      magrittr, skimr, xray,
-                     ggthemes, scales)
+                     ggthemes, scales, grid)
 
 range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 
@@ -380,6 +376,8 @@ save(world_map, file = "data/world_map.Rdata")
 ## Regime Support Map
 
 ```{r}
+load("data/macro.Rdata")
+
 macro %>% 
   mutate(id = cntry) %>% 
   select(id, mean_gov, delib10) %>% 
@@ -401,23 +399,24 @@ world_map %>%
   theme_void() +
 #  scale_fill_gradient(low = "red", high = "blue") + 
   coord_equal() +
-  viridis::scale_fill_viridis("Average Regime Support Deliberation Component Index", 
+  viridis::scale_fill_viridis("Average Value", 
                               option = "D", discrete = F, end = .8,
                               limits = c(0, 1), 
                         breaks = c(0, .20, .40, .60, .8, 1),
                         labels = c(0, .20, .40, .60, .8, 1)) + 
-  facet_wrap(~key, nrow = 1) +
+  facet_wrap(~key, nrow = 2) +
   theme(
     legend.justification = c(1, 0),
-    legend.position = c(0.3, -0.075),
-    legend.title = element_text(size = 8), strip.text = element_text(size = 12),
+    legend.position = c(0.2, 0.25),
+    legend.title = element_text(size = 10), 
+    strip.text = element_text(size = 12),
     #axis.ticks.length = unit(3, "cm"),
     legend.direction = "vertical") +
-  guides(fill = guide_colorbar(barwidth = 0.5, barheight = 8,
+  guides(fill = guide_colorbar(barwidth = 0.7, barheight = 15,
                 title.position = "bottom", title.hjust = 0.5,
-                label.theme = element_text(colour = "black", size = 5, angle = 0)))
+                label.theme = element_text(colour = "black", size = 6, angle = 0)))
 
-ggsave(filename = "images/map2.png", height = 9, width = 12) 
+ggsave(filename = "images/map3.png", height = 6, width = 12) 
 
 # world_map %>% 
 #   filter(id == "United States")
@@ -790,6 +789,12 @@ controls_plot %>%
 
 
 ggsave(gg_controls, filename = "images/gg_controls.png", width = 8, height = 9)
+
+
+# library(tidyverse)
+# estimates_data %>% 
+#   group_by(model_cite) %>% 
+#   count()
 ```
 
 ### With Polity Controls
@@ -1781,3 +1786,223 @@ ggsave(filename = "images/model_comparison_nondem.png", width = 11, height = 5)
 
 
 ```
+
+
+# slideplots
+
+## complete sample
+
+### with controls
+
+```{r}
+x_min <- -0.35 
+
+controls_plot_dem %>% 
+  mutate(sample = "Democracy Sample") %>% 
+  bind_rows(controls_plot %>% 
+            mutate(sample = "Complete Sample")) %>% 
+  bind_rows(controls_plot_nondem %>% 
+            mutate(sample = "Non-Democracy Sample")) %>% 
+  filter(term_cite == "delib10") %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1),
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  coord_flip() +
+  geom_text(aes(x = term, 
+                y = estimate + 0.16,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = .9), size = 5.2,
+            show.legend = F) +
+  geom_text(aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.4, size = 3.5, color = "gray20") +
+  # geom_text(data = with_controls_icc, 
+  #           aes(x = term, 
+  #               y =  0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_manual("Dependent Variable", 
+                               labels = rev(c("Regime Support (No Bias)", 
+                                          "Regime Support (Low Bias)", 
+                                          "Regime Support (High Bias)")),
+                       values = rev(gdocs_pal()(3))) +
+  scale_y_continuous(breaks = seq(x_min, 0.45, 0.10), 
+                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.10), 2))  +
+  # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index")), 
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))),
+                            parse=TRUE)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Controlled for Individual and Macro Level Variables") + 
+  theme(plot.title = element_text(size=14, face="bold.italic"),
+        axis.title.y = element_text(size = 21),
+        strip.text = element_text(size = 12)) + 
+  guides(colour = guide_legend(reverse=T)) +
+  facet_wrap(~sample, ncol = 1) -> control_slides
+
+
+ggsave(control_slides, filename = "images/control_slides.png", width = 8, height = 9)
+```
+
+### pols
+
+```{r}
+estimates_data %>% 
+  filter(set == "with_pols_dat_dem") %>% 
+  mutate(sample = "Democracy Sample") -> with_pols_dat_dem
+
+estimates_data %>% 
+  filter(set == "with_pols_dat_nondem") %>% 
+  mutate(sample = "Non-Democracy Sample")  -> with_pols_dat_nondem
+
+
+estimates_data %>% 
+  filter(set == "with_pols_dat") %>% 
+  mutate(sample = "Complete Sample") %>% 
+  bind_rows(with_pols_dat_dem) %>% 
+  bind_rows(with_pols_dat_nondem) %>% 
+  filter(term_cite %in% "delib10" | 
+           term %in% c("Democracy (DCI)", "Autocracy (DCI)")) -> with_pols_dat
+
+
+
+
+with_pols_dat %>% 
+  filter(term %in% c("Democracy (DCI)",
+                     "Autocracy (DCI)")) -> with_pols_dat_regime
+
+
+with_pols_dat %>% 
+  filter(term %nin% c("Democracy (DCI)",
+                     "Autocracy (DCI)")) -> with_pols_dat_delibs
+
+
+# library(scales)
+# show_col(gdocs_pal()(3))
+
+
+with_pols_dat %>% 
+ ggplot() + 
+  aes(x = term, y = estimate, color = bias) + 
+  geom_hline(yintercept = 0, 
+             color = "gray25", 
+             linetype = "dotted") + 
+  geom_linerange(data = with_pols_dat_delibs, aes(x = term, 
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), 
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_delibs, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2),
+                      lwd = 1/2, position = position_dodge(width = 0.7),
+                  shape = 20, fill = "white") +
+  geom_linerange(data = with_pols_dat_regime, aes(x = term,
+                     ymin = estimate - std_error*interval1,
+                     ymax = estimate + std_error*interval1), size = 0.6,
+                     lwd = 1, position = position_dodge(width = 0.7), show.legend = F) +
+  geom_pointrange(data = with_pols_dat_regime, aes(x = term, 
+                      y = estimate, ymin = estimate - std_error*interval2,
+                      ymax = estimate + std_error*interval2), size = 0.6,
+                      lwd = 1/2, position = position_dodge(width = 0.7),  shape = 20, fatten = 0.8) +
+  coord_flip() +
+  geom_text(data = with_pols_dat_delibs, aes(x = term, 
+                y = estimate + 0.19,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1), size = 5.2,
+            show.legend = F) +
+  geom_text(data = with_pols_dat_regime, aes(x = term, 
+                y = estimate + 0.19,
+                label = paste(sprintf('%.2f', estimate, 2), stars)), 
+                position = position_dodge(width = 1.1), size = 5.2,
+            show.legend = F) +
+  geom_text(data = with_pols_dat_delibs, aes(x = term,
+                y =  -.23,
+                label = model),
+            show.legend = F, nudge_x = 0.32, size = 2.5, color = "gray20") +
+  # ggrepel::geom_text_repel(data = anovies_pols,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = report),
+  #           segment.alpha = 0,
+  #           nudge_x = -2.5,
+  #           direction = "x",
+  #           show.legend = F, parse = T, size = 2.7) +
+  #  ggrepel::geom_text_repel(data = anovies_pols,
+  #           aes(x = term,
+  #               y =  -0.23,
+  #               label = anovie_stars),
+  #           segment.color = NULL,
+  #           segment.alpha = 0,
+  #           nudge_x = -1.5,
+  #           direction = "x",
+  #           show.legend = F, parse = F, size = 2.7) +
+  # geom_text(data = with_pols_icc, 
+  #           aes(x = term, 
+  #               y =  -0.25,
+  #               label = paste0("ICC: ", sprintf('%.2f', icc, 2))), 
+  #               position = position_dodge(width = .9),
+  #           show.legend = F) +
+  ggthemes::theme_hc() +
+  # ggthemes::scale_colour_gdocs() +
+  scale_color_manual(values = rev(gdocs_pal()(3))) +
+  ggthemes::scale_fill_hc() +
+  facet_wrap(~sample, ncol = 1) +
+  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
+  scale_x_discrete(limits = rev(c("Deliberation Component Index",
+                                      "Democracy (DCI)",
+                                      "Autocracy (DCI)")),
+                   labels = c("Deliberation Component Index"=expression(displaystyle(bold(Deliberation~~Component~~Index))),
+                            "Democracy (DCI)"=expression(displaystyle(italic(Democracy (0/1)))), 
+                            "Autocracy (DCI)"=expression(displaystyle(italic(Autocracy (0/1)))),
+                            parse=TRUE), expand = c(0, 1.1)) +
+  scale_y_continuous(breaks = seq(x_min, 0.45, 0.1), 
+                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.1), 2)) +
+  xlab("") + 
+  ylab("Estimate") +
+  ggtitle("Individual and Macro Level Controls + Polity/FH Dummies") + 
+  theme(plot.title = element_text(size = 14, face="bold.italic"),
+        axis.title.y = element_text(size = 21),
+        strip.text = element_text(size = 12)) -> slide_pols
+
+
+ggsave(slide_pols, filename = "images/slide_pols.png", width = 8, height = 9)
+```
+
+
+#### merging
+
+```{r}
+legend_b <- cowplot::get_legend(control_slides + theme(legend.direction = "horizontal",
+                                                   legend.justification="center",
+                                                   legend.box.just = "bottom"))
+
+library(gridExtra)
+
+grid.arrange(control_slides  + theme(legend.position="none"),
+                   slide_pols + theme(legend.position="none"), legend_b, ncol=2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)),
+             widths = c(2.7, 2.7), heights = c(2.5, 0.2)) -> coefplot
+
+ggsave(coefplot, filename = "slides/images/slides_coefplot.png", width = 18, height = 10)
+
+```
+
+

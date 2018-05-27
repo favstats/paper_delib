@@ -16,8 +16,6 @@ options(scipen = 999)
 # Loading the Packages
 
 ```{r}
-
-
 # pacman::p_install_gh("systats/tidyTX")
 # pacman::p_install_gh("systats/tidyMBO")
 #pacman::p_install_gh("favstats/favstats")
@@ -28,9 +26,9 @@ pacman::p_load(tidyverse, haven, sjPlot, sjmisc, sjstats,
                      magrittr, rlist, tidyMBO, tidyTX,
                      ggstance)
 
-
-memory.limit()
-memory.limit(size=40000)
+library(tidyverse)
+# memory.limit()
+# memory.limit(size=40000)
 ```
 
 # Loading in Data
@@ -1635,6 +1633,134 @@ save(full_anovies_nondem, file = "data/full_anovies_nondem.Rdata")
 
 ```
 
+# South East Asia Request
+
+```{r}
+
+
+load("data/macro.Rdata")
+
+macro %>% 
+  mutate(region = countrycode(cntry, "country.name", "region")) %>% 
+  filter(region %in% c("South-Eastern Asia", "Eastern Asia")) %>% 
+  mutate(iso3 = countrycode(cntry, "country.name", "iso3c")) %>% 
+  select(mean_gov, mean_gov_low, mean_gov_high, delib10:engage10, iso3, regime) %>% 
+  gather("support_types", "support", -iso3, -regime, -delib10:-engage10) %>% 
+  gather("delib_types", "delib", -iso3, -regime, -support_types, -support) %>%
+  mutate(regime = case_when(
+    regime == "demo" ~ "Democracies", 
+    regime == "ano" ~ "Anocracies", 
+    regime == "auto" ~ "Autocracies"
+  )) %>% 
+  mutate(`Regime Type` = factor(regime, levels = c("Democracies", "Anocracies", "Autocracies"))) %>% 
+  mutate(delib_types = case_when(
+    delib_types == "delib10" ~ "Deliberation Component Index",
+    delib_types == "reason10" ~ "Reasoned Justification",
+    delib_types == "common10" ~ "Common Good",
+    delib_types == "countr10" ~ "Counter-Arguments",
+    delib_types == "consult10" ~ "Range of Consultation",
+    delib_types == "engage10" ~ "Engaged Society"
+  )) %>% 
+  mutate(delib_types = factor(delib_types, 
+                                levels = c("Deliberation Component Index",
+                                           "Reasoned Justification",
+                                           "Common Good",
+                                           "Counter-Arguments",
+                                           "Range of Consultation",
+                                           "Engaged Society"))) %>% 
+  mutate(support_types = case_when(
+    support_types == "mean_gov" ~ "Regime Support - No Bias",
+    support_types == "mean_gov_low" ~ "Regime Support - Low Bias",
+    support_types == "mean_gov_high" ~ "Regime Support - High Bias"
+  )) %>% 
+  mutate(support_types = factor(support_types, levels = c("Regime Support - No Bias", 
+                                      "Regime Support - Low Bias",
+                                      "Regime Support - High Bias"))) %>% 
+  ggplot(aes(delib, support, color = `Regime Type`)) +
+  geom_point(aes(shape = `Regime Type`)) +
+  # geom_smooth(method = "lm", se = F, size = 0.6, show.legend = F) +
+  geom_smooth(method = "lm", color = "black", linetype = 2, se = F, show.legend = F) +
+  facet_grid(delib_types ~ support_types) +
+  ggrepel::geom_text_repel(aes(label = iso3), show.legend = FALSE) +
+  #geom_text(aes(label = iso3)) +
+  # ggpubr::stat_cor(label.x.npc = "left", 
+  #                  label.y.npc = 0.15, show.legend = F) +
+  ggpubr::stat_cor(color = "black", label.x.npc = "right", label.y.npc = "top", show.legend = F) +
+  ggthemes::theme_hc() +
+  scale_color_gdocs() +
+  # cowplot::panel_border() +# and a border around each panel
+  theme(panel.spacing = unit(2, "lines"),
+        strip.text = element_text(size = 11)) +
+  xlab("Deliberation Indices") +
+  ylab("Average Regime Support") 
+
+ggsave(filename = "images/megaplot_eastasia.png", height = 18, width = 14)
+
+```
+## boxplots?
+
+```{r}
+combined_southeast <- combined %>%
+  mutate(region = countrycode(cntry, "country.name", "region")) %>%
+  filter(region %in% c("South-Eastern Asia", "Eastern Asia"))
+
+
+
+combined_southeast %>% 
+  mutate(cntry = fct_reorder(cntry, gov_trust))  %>%
+  mutate(regime = case_when(
+    regime == "demo" ~ "Democracies", 
+    regime == "ano" ~ "Anocracies", 
+    regime == "auto" ~ "Autocracies"
+  )) %>% 
+  select(cntry, gov_trust:gov_trust_high, regime) %>% 
+  gather(key, value, -regime, -cntry) %>% 
+  mutate(`Regime Type` = factor(regime, levels = c("Democracies", "Anocracies", "Autocracies"))) %>% 
+  mutate(key = case_when(
+    key == "gov_trust" ~ "Regime Support - No Bias",
+    key == "gov_trust_low" ~ "Regime Support - Low Bias",
+    key == "gov_trust_high" ~ "Regime Support - High Bias"
+  )) %>% 
+  mutate(key = factor(key, levels = c("Regime Support - No Bias", 
+                                      "Regime Support - Low Bias",
+                                      "Regime Support - High Bias"))) %>% 
+  ggplot(aes(cntry, value)) +
+  geom_violin(aes(fill = `Regime Type`)) +
+  geom_boxplot(alpha = 0.4, width = 0.2) +
+  coord_flip() +
+  ggthemes::theme_hc() +
+  scale_fill_gdocs() +
+  facet_grid(~key) +
+  xlab("") +
+  ylab("")
+
+
+ggsave(filename = "images/boxplot_eastasia.png", height = 10, width = 14)
+```
+
+
+## failed attempt
+
+```{r}
+
+# 
+# combined_southeast %<>% 
+#   select(-region, -survey) %>% 
+#   group_by(cntry, regime) %>% 
+#   summarise_all(mean)
+# 
+# 
+# 
+# combined_southeast %>% 
+#   select(cntry, regime, gov_trust:gov_trust_high, delib10:polity10) %>% 
+#   gather(key, value, -cntry, -regime, -gov_trust, -gov_trust_low, -gov_trust_high) %>% 
+#   ggplot(aes(delib10, gov_trust, color = regime)) +
+#   geom_point() +
+#   geom_smooth(se = F, alpha = 0.2) +
+#   geom_text(aes(label = cntry))
+# 
+
+```
 
 
 # Try Out
