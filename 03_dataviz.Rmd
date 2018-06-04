@@ -2006,3 +2006,78 @@ ggsave(coefplot, filename = "slides/images/slides_coefplot.png", width = 18, hei
 ```
 
 
+
+# anovies
+
+## w/o delibs
+
+```{r}
+load("data/full_anovies_wo_delibs.Rdata")
+
+# Just Control Models vs. Just Deliberation Models
+
+
+full_anovies_wo_delibs %>% 
+  mutate(comparison = case_when(
+    str_detect(comparison, "Complete") ~ "Complete Sample",
+    str_detect(comparison, "Non-Dem") ~ "Non-Democracy Sample",
+    str_detect(comparison, "Dem. Sample") ~ "Democracy Sample"
+  )) %>% 
+ ggplot(aes(bias, type, fill = stars)) +
+   geom_tile(color = "white") +
+   scale_fill_manual("Likelihood Ratio Test\n Significance Level", 
+                     values = c("lightgray", "#bae4b3", "#74c476", "#31a354", "#006d2c")) +
+   facet_wrap(~comparison, scales = "free_x", nrow = 1) +
+   # coord_fixed()  + 
+   ylab("Models") +
+   xlab("") +
+   geom_text(aes(bias, type, label = report), color = "black", size = 4, parse = T) +
+   # scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   #   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   #    name="Pearson Correlation\n") +
+   ggthemes::theme_hc() +
+    theme(strip.text = element_text(size = 13)) 
+
+ggsave(filename = "slides/images/model_comparison_wo_delibs2.png", width = 15, height = 8)
+
+```
+
+## just polity
+
+```{r}
+load("data/full_anovies.Rdata")
+load("data/full_anovies_dem.Rdata")
+load("data/full_anovies_nondem.Rdata")
+
+bind_rows(
+full_anovies %>% 
+  filter(str_detect(comparison, "Polity")) %>% 
+  mutate(sample = "Complete Sample"),
+
+full_anovies_dem %>% 
+  filter(str_detect(comparison, "Polity")) %>% 
+  mutate(sample = "Democracy Sample"),
+
+full_anovies_nondem %>% 
+  filter(str_detect(comparison, "Polity")) %>% 
+  mutate(sample = "Non-Democracy Sample")
+)  %>% 
+ ggplot(aes(bias, type, fill = stars)) +
+   geom_tile(color = "white") +
+   scale_fill_manual("Likelihood Ratio Test\n Significance Level", 
+                     values = c("lightgray", "#bae4b3", "#74c476", "#31a354", "#006d2c"))  +
+   facet_wrap(~sample, scales = "free_x", nrow = 1) +
+   # coord_fixed()  + 
+   ylab("Models") +
+   xlab("") +
+   geom_text(aes(bias, type, label = report), color = "black", size = 4, parse = T) +
+   # scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   #   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   #    name="Pearson Correlation\n") +
+   ggthemes::theme_hc() +
+    theme(strip.text = element_text(size = 13)) 
+
+ggsave(filename = "images/model_comparison_polities.png", width = 15, height = 8)
+  
+```
+

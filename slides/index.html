@@ -78,8 +78,8 @@ Research Question:
 
 .onehundredtwenty[
 
-1. Theoretical Underpinnings
-2. Data
+1. Theoreteical Framework
+2. Data &amp; Methodology
 3. Challenges
 4. Analysis &amp; Results
 5. Conclusions &amp; Future Research
@@ -120,12 +120,12 @@ class: inverse, center, middle
 class: inverse, center, middle
 
 
-## Data
+## Data &amp; Methodology
 
 
 ---
 
-## Data
+#### Data &amp; Methodology
 
 **Individual-Level Data**
 + Merging of the following datasets: 
@@ -137,6 +137,7 @@ class: inverse, center, middle
   + World Values Survey (2010-2014)
 
 + In total 316,938 individual cases in 119 Countries
+  + weighted to same sample size (=1000)
 
 
 --
@@ -144,6 +145,94 @@ class: inverse, center, middle
 **Country-Level Data**
 + "Varieties of Democracy"-Dataset: Deliberative Component Index
 + Control variables come from V-Dem and the QoG-Dataset
++ Lagging of Independent Variables (Averaging from 2000 - 2010)
+
+---
+
+#### Data &amp; Methodology
+
+.ninetyfive[
+
++ Control Variables
+    + Micro Level
+        + Age
+        + Sex (Male/Female)
+        + Financial Security
+        + Education
+        + Employment (0/1)
+    + Macro Level
+        + Polity/FH
+        + Democracy (0/1)
+        + Autocracy (0/1)
+        + logged GDP per capita
+        + logged Population
+        + Life Expectancy
+        + Urban Pop. Ratio
+    + Survey dummies
+        + WVS, Afrobarometer, Latinobarometro, Americasbarometer, Asianbarometer, ESS
+        
+]
+
+---
+
+
+## Operationalization of Regime Support
+
+Three types of traditional political branches
++ executive (political leadership)
++ judicial and legal system (courts and police)
++ legislation (parliament) 
+
+
+﻿<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body><style type="text/css">
+.tg  {border-collapse:collapse;border-spacing:0;border-color:#999;}
+.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-top-width:1px;border-bottom-width:1px;border-color:#999;color:#444;background-color:#F7FDFA;}
+.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-top-width:1px;border-bottom-width:1px;border-color:#999;color:#fff;background-color:#26ADE4;}
+.tg .tg-g7qi{font-weight:bold;font-size:20px;border-color:inherit;vertical-align:top}
+.tg .tg-baqh{text-align:center;vertical-align:top}
+.tg .tg-1d7g{font-weight:bold;font-size:16px;vertical-align:top}
+.tg .tg-j5ap{font-weight:bold;font-size:16px;border-color:inherit;vertical-align:top}
+.tg .tg-jfoo{font-weight:bold;font-size:20px;border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-qsbk{font-weight:bold;font-style:italic;font-size:16px;border-color:inherit;text-align:center;vertical-align:top}
+.tg .tg-76l3{font-weight:bold;font-style:italic;font-size:16px;text-align:center;vertical-align:top}
+.tg .tg-5frq{font-style:italic;text-align:center;vertical-align:top}
+</style>
+<table class="tg" style="undefined;table-layout: fixed; width: 415px">
+<colgroup>
+<col style="width: 286px">
+<col style="width: 129px">
+</colgroup>
+  <tr>
+    <th class="tg-g7qi">Variable</th>
+    <th class="tg-jfoo">Loadings</th>
+  </tr>
+  <tr>
+    <td class="tg-j5ap">Trust in Political Leadership</td>
+    <td class="tg-qsbk">0.72</td>
+  </tr>
+  <tr>
+    <td class="tg-j5ap">Trust in Police</td>
+    <td class="tg-qsbk">0.76</td>
+  </tr>
+  <tr>
+    <td class="tg-j5ap">Trust in Courts</td>
+    <td class="tg-qsbk">0.64</td>
+  </tr>
+  <tr>
+    <td class="tg-1d7g">Trust in Parliament</td>
+    <td class="tg-76l3">0.75</td>
+  </tr>
+  <tr>
+    <td class="tg-5frq" colspan="2">Variance explained: 52%</td>
+  </tr>
+  <tr>
+    <td class="tg-baqh" colspan="2">Cronbach's α: 0.81</td>
+  </tr>
+</table>
+
+
+
 
 ---
 
@@ -191,63 +280,7 @@ class: inverse, center, middle
 #### Multicolinearity issue
 
 
-
-<html>
-
-
-<style type="text/css">
-.tg  {border-collapse:collapse;border-spacing:0;border-width:1px;border-style:solid;border-color:#aabcfe;}
-.tg td{font-family:Arial, sans-serif;font-size:14px;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-color:#aabcfe;color:#669;background-color:#e8edff;}
-.tg th{font-family:Arial, sans-serif;font-size:14px;font-weight:normal;padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-color:#aabcfe;color:#039;background-color:#b9c9fe;}
-.tg .tg-8bgf{font-style:italic;border-color:inherit;text-align:center;vertical-align:top}
-.tg .tg-c3ow{border-color:inherit;text-align:center;vertical-align:top}
-.tg .tg-p8bj{font-weight:bold;border-color:inherit;vertical-align:top}
-.tg .tg-rvyq{font-weight:bold;font-style:italic;border-color:inherit;text-align:center;vertical-align:top}
-</style>
-<table class="tg">
-  <tr>
-    <th class="tg-c3ow"></th>
-    <th class="tg-p8bj">DCI </th>
-    <th class="tg-p8bj">Reasoned Justif. </th>
-    <th class="tg-p8bj">Common Good </th>
-    <th class="tg-p8bj">Counter-Arg.</th>
-    <th class="tg-p8bj">Range of Consult. </th>
-    <th class="tg-p8bj">Engaged Soc.</th>
-    <th class="tg-p8bj">Polity/FH</th>
-  </tr>
-  <tr>
-    <td class="tg-p8bj">Complete Data (n=119) </td>
-    <td class="tg-rvyq">0.80 </td>
-    <td class="tg-rvyq">0.67 </td>
-    <td class="tg-8bgf">0.35 </td>
-    <td class="tg-rvyq">0.79 </td>
-    <td class="tg-rvyq">0.70 </td>
-    <td class="tg-rvyq">0.78 </td>
-    <td class="tg-c3ow">1.00</td>
-  </tr>
-  <tr>
-    <td class="tg-p8bj">Democracies (n=64)</td>
-    <td class="tg-rvyq">0.61 </td>
-    <td class="tg-rvyq">0.68 </td>
-    <td class="tg-8bgf">0.39 </td>
-    <td class="tg-rvyq">0.54 </td>
-    <td class="tg-rvyq">0.59 </td>
-    <td class="tg-8bgf">0.46 </td>
-    <td class="tg-c3ow">1.00</td>
-  </tr>
-  <tr>
-    <td class="tg-p8bj">Non-Democracies (n=55)</td>
-    <td class="tg-rvyq">0.64 </td>
-    <td class="tg-8bgf">0.28 </td>
-    <td class="tg-8bgf">0.08 </td>
-    <td class="tg-rvyq">0.65 </td>
-    <td class="tg-8bgf">0.47 </td>
-    <td class="tg-rvyq">0.72 </td>
-    <td class="tg-c3ow">1.00</td>
-  </tr>
-</table>
-</html>
-
+&lt;img src="images/corr_table.png"&gt;
 
 ---
 
@@ -295,34 +328,13 @@ class: inverse, center, middle
 
 ---
 
-#### Analysis
-
-.eightyfive[
+## Analysis
 
 + Multilevel Models
     + In total 91 seperate models
     + DVs: Regime Support (No, Low, High Bias)
     + Main IVs: All six Deliberation indicators
-
-+ Control Variables
-    + Micro Level
-        + Age
-        + Sex (Male/Female)
-        + Financial Security
-        + Education
-        + Employment (0/1)
-    + Macro Level
-        + Polity/FH
-        + Democracy (0/1)
-        + Autocracy (0/1)
-        + logged GDP per capita
-        + logged Population
-        + Life Expectancy
-        + Urban Pop. Ratio
-    + Survey dummies
-        + WVS, Afrobarometer, Latinobarometro, Americasbarometer, Asianbarometer, ESS
-        
-]
+    
 
 ---
 
@@ -331,6 +343,14 @@ class: inverse, center, middle
 
 &lt;img src="images/slides_coefplot.png"&gt;
 
+
+---
+
+### Model Comparisons -Just Polity/FH Models vs. Complete Models
+
+&lt;br&gt;
+
+&lt;img src="images/model_comparison_polities.png"&gt;
 
 ---
 
@@ -362,11 +382,14 @@ class: inverse, center, middle
 
 ## Thanks for Listening!
 
+Full Paper: &lt;a href='https://www.academia.edu/36656020/Deliberation_Across_the_World_A_Cross-National_Examination_of_the_Link_Between_Deliberation_and_Regime_Legitimacy'&gt;Deliberation Across the World&lt;/a&gt;
+
 Slides: &lt;a href='deliberation-and-legitimacy.netlify.com'&gt;https://deliberation-and-legitimacy.netlify.com &lt;/a&gt;
 
 Online Appendix can be found &lt;a href='https://favstats.github.io/delib_mod_database'&gt;here&lt;/a&gt;
 
 Code and Data on &lt;a href='https://github.com/favstats/paper_delib'&gt;GitHub&lt;/a&gt;
+
 
 ---
 
@@ -383,6 +406,13 @@ Marwick, A., &amp; Lewis, R. (2017). Media manipulation and disinformation onlin
 class: inverse, center, middle
 
 ## Appendix
+
+---
+
+
+#### Operationalization of Regime Support
+
+&lt;img src="images/operat.png"&gt;
 
 ---
 
@@ -416,7 +446,17 @@ class: inverse, center, middle
 
 ---
 
-### Model Comparisons
+
+
+### Model Comparisons - Just Control Models vs. Just Deliberation Models
+
+&lt;br&gt;
+
+&lt;img src="images/model_comparison_wo_delibs2.png"&gt;
+
+---
+
+### Model Comparisons - Complete Sample
 
 &lt;br&gt;
 &lt;br&gt;
@@ -425,7 +465,7 @@ class: inverse, center, middle
 
 ---
 
-### Model Comparisons
+### Model Comparisons - Democracy Sample
 
 &lt;br&gt;
 &lt;br&gt;
@@ -434,15 +474,12 @@ class: inverse, center, middle
 
 ---
 
-### Model Comparisons
+### Model Comparisons - Non-Democracy Sample
 
 &lt;br&gt;
 &lt;br&gt;
 
 &lt;img src="images/model_comparison_nondem.png"&gt;
-
-
----
     </textarea>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({

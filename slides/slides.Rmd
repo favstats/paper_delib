@@ -1,8 +1,8 @@
 ---
 title: "Deliberation Across the World"
-subtitle: "Examining the Link Between <br> Regime Legitimacy and Deliberation <br> <br> Rosa Seitz^[] & Fabio Votta^[] <br> <br> 2018/06/05"
-author: "<br> <sup>1</sup> E-Mail: fabio.votta@gmail.com <br> <sup>2</sup> E-Mail: rosa.marie.seitz@gmail.com"
-date: "Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com/ </a>"
+subtitle: "Examining the Link Between <br> Regime Legitimacy and Deliberation <br> <br> <font size='6'>Rosa Seitz^[] & Fabio Votta^[] <br> 2018-05-06</font>"
+author: "<sup>1</sup> E-Mail: rosa.marie.seitz@gmail.com <br> <sup>2</sup> E-Mail: fabio.votta@gmail.com"
+date: "<br> Slides: <a href='deliberation-and-legitimacy.netlify.com'>https://deliberation-and-legitimacy.netlify.com/ </a>"
 output:
   xaringan::moon_reader:
     lib_dir: libs
@@ -16,7 +16,7 @@ output:
     
 
 ```{r xaringan-themer, include = FALSE}
-library(xaringanthemer)
+# library(xaringanthemer)
 # mono_accent(base_color = "#252525", link_color	= "rgb(198, 219, 239)")
 ```
 
@@ -52,7 +52,7 @@ library(xaringanthemer)
 # include=FALSE
 options(htmltools.dir.version = FALSE)
 
-pacman::p_load(dplyr, ggplot2, googlesheets, openxlsx, stringr, rvest, dplyr, ggplot2, keras, mlrMBO, tidyMBO, ggthemes, Smisc, randomForest, parallelMap, emoa, xaringan, tidyTX, d3heatmap)
+pacman::p_load(tidyverse, xaringan)
 
 knitr::opts_chunk$set(echo = F, warning = F, error = F, message = F)
 
@@ -84,8 +84,8 @@ Research Question:
 
 .onehundredtwenty[
 
-1. Theoretical Underpinnings
-2. Data
+1. Theoretical Framework
+2. Data & Methodology
 3. Challenges
 4. Analysis & Results
 5. Conclusions & Future Research
@@ -105,7 +105,8 @@ class: inverse, center, middle
 ## Theory
 
 + Central claim of deliberative theory: 
-    + making it possible to arrive at (more) legitimate desicions
+    + to arrive at (more) legitimate decisions 
+    + see for example Habermas (1994: 7–8) & Warren & Gastil (2015: 562)
 
 
 --
@@ -113,12 +114,13 @@ class: inverse, center, middle
 
 
 --
-+ General assumption: Deliberative qualities of a political system increase support from its citizens
++ General assumption: deliberative qualities of a political system increase support from its citizens
 
 
 --
-+ *Authoritarian deliberation*: Might decrease support due to increasing democratic capabilites
-
++ Consequences of *Authoritarian Deliberation* (He & Warren, 2011)
+    + Authoritarian regimes might use deliberation to *increase* support  
+    + Might *decrease* support due to increasing democratic capabilites 
 
 
 ---
@@ -126,12 +128,12 @@ class: inverse, center, middle
 class: inverse, center, middle
 
 
-## Data
+## Data & Methodology
 
 
 ---
 
-## Data
+#### Data & Methodology
 
 **Individual-Level Data**
 + Merging of the following datasets: 
@@ -143,6 +145,7 @@ class: inverse, center, middle
   + World Values Survey (2010-2014)
 
 + In total 316,938 individual cases in 119 Countries
+  + weighted to same sample size (=1000)
 
 
 --
@@ -150,26 +153,61 @@ class: inverse, center, middle
 **Country-Level Data**
 + "Varieties of Democracy"-Dataset: Deliberative Component Index
 + Control variables come from V-Dem and the QoG-Dataset
++ Lagging of Independent Variables (Averaging from 2000 - 2010)
 
 ---
 
-## Deliberative Component Index (DCI)?
+#### Data & Methodology
 
-+ short description?
-+ Table with five components?
+.ninetyfive[
+
++ Control Variables
+    + Micro Level
+        + Age
+        + Sex (Male/Female)
+        + Financial Security
+        + Education
+        + Employment (0/1)
+    + Macro Level
+        + Polity/FH
+        + Democracy (0/1)<sup>1</sup>
+        + Autocracy (0/1)<sup>1</sup>
+        + logged GDP per capita
+        + logged Population
+        + Life Expectancy
+        + Urban Pop. Ratio
+    + Survey dummies
+        + WVS, Afrobarometer, Latinobarometro, Americasbarometer, Asianbarometer, ESS
+        
+]
+
+<font size='1'><sup>1</sup>We apply the Polity2-classification of democracies, anocracies and autocracies. Polity/FH was rescaled to range from -10 to +10 and the cut-off values are set at 6 and -6 (-10 – -6 = Autocracy; -5 – 5 =Anocracy; 6 – 10 = Democracy).</font>
+
+
+---
+
+
+## Operationalization of Regime Support
+
+Three types of traditional political branches
++ executive (political leadership)
++ judicial and legal system (courts and police)
++ legislation (parliament) 
+
+
+```{r}
+htmltools::includeHTML("tables/factor_analysis.html")
+```
+
+
+---
+
+## Deliberative Component Index (DCI)
 
 <center>
 <img src="images/dci_table.png">
 </center>
 
-
----
-
-## World Maps
-
-<center>
-<img src="images/map3.png" height="470">
-</center>
 
 ---
 
@@ -197,10 +235,7 @@ class: inverse, center, middle
 #### Multicolinearity issue
 
 
-```{r}
-htmltools::includeHTML("tables/corr_tab.html")
-```
-
+<img src="images/corr_table.png">
 
 ---
 
@@ -248,42 +283,48 @@ class: inverse, center, middle
 
 ---
 
-#### Analysis
+## Analysis
 
-.eightyfive[
+Given the hierarchical nature of the data we estimate *multilevel models*
++ Dependent Variables
+    + Regime Support *(No Bias)*   -> `ICC: 44.97%`
+    + Regime Support *(Low Bias)*  -> `ICC: 41.70%`
+    + Regime Support *(High Bias)* -> `ICC: 40.97%`
 
-+ Multilevel Models
-    + In total 91 seperate models
-    + DVs: Regime Support (No, Low, High Bias)
-    + Main IVs: All six Deliberation indicators
+--
+    
++ Main independent variables
+    + Deliberative Component Index (DCI)
+    + plus all five components of the DCI
 
-+ Control Variables
-    + Micro Level
-        + Age
-        + Sex (Male/Female)
-        + Financial Security
-        + Education
-        + Employment (0/1)
-    + Macro Level
-        + Polity/FH
-        + Democracy (0/1)
-        + Autocracy (0/1)
-        + logged GDP per capita
-        + logged Population
-        + Life Expectancy
-        + Urban Pop. Ratio
-    + Survey dummies
-        + WVS, Afrobarometer, Latinobarometro, Americasbarometer, Asianbarometer, ESS
-        
-]
+--
+
++ In total 91 seperate models
+    + split into three subsamples (Complete, Democracies, Non-Democracies)
+ 
+--
+
+*Note: complete sample uses dummy variables of Polity/FH because of non-linearity and multicolinearity issues*
+
 
 ---
 
 ## Results
 
 
-<img src="images/slides_coefplot.png">
+<a href="https://raw.githubusercontent.com/favstats/delib_slides/master/images/slides_coefplot.png" target = "blank"> <img src="images/slides_coefplot.png"> </a>
 
+*Click on picture for larger Version*
+
+---
+
+### Model Comparisons -Just Polity/FH Models vs. Complete Models
+
+<br>
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/model_comparison_polities.png" target = "blank"> <img src="images/model_comparison_polities.png"> </a>
+
+*Click on picture for larger Version*
 
 ---
 
@@ -296,13 +337,18 @@ class: inverse, center, middle
 ## Conclusions & Future Research
 
 * No simple answer to research question
- + deliberation seems to have a positive effect on regime support in democracies
- + less robust and ambiguous results for non-democracies and complete sample
+ + deliberation seems to have a *positive effect* on regime support *in democracies*
+ + less robust and *ambiguous results for non-democracies and complete sample*
     
-    
+--
+
 * Presumably biased regime support
  + should be taken into account 
  + possible remedies? (e.g. weighting procedures, survey design)
+ + individual-level vs. country-level weighting?
+
+--
+
 
 * Validity of the DCI
     + more sensitive approaches to measure deliberation on the country level are neccessary
@@ -328,10 +374,13 @@ Code and Data on <a href='https://github.com/favstats/paper_delib'>GitHub</a>
 
 ## References
 
-Hawley, G. (2017). Making Sense of the Alt-right. Columbia University Press.
+*Habermas, J. (1994). Three normative models of democracy. Constellations, 1 (1), 1–10.*
 
-Marwick, A., & Lewis, R. (2017). Media manipulation and disinformation online. New York: Data & Society Research Institute.
+*He, B., & Warren, M. E. (2011). Authoritarian deliberation: The deliberative turn in chinese political development. Perspectives on Politics, 9 (2), 269–289.*
 
+*Tannenberg, M. (2017). The autocratic trust bias: Politically sensitive survey items and self-censorship. Varieties of Democracy Institute: Working Paper, (49), 1–31.*
+
+*Warren, M. E., & Gastil, J. (2015). Can deliberative minipublics address the cognitive challenges of democratic citizenship? The Journal of Politics, 77 (2), 562–574.*
 
 
 ---
@@ -342,63 +391,87 @@ class: inverse, center, middle
 
 ---
 
+
+#### Operationalization of Regime Support
+
+<img src="images/operat.png">
+
+---
+
 ### Maps - Deliberation
 
-<img src="images/map_dci.png">
+<a href="https://github.com/favstats/delib_slides/raw/master/images/map_dci.png" target = "blank"><img src="images/map_dci.png"></a>
 
 ---
 
 ### Maps - Regime Support
 
-<img src="images/map_regime.png">
+<a href="https://github.com/favstats/delib_slides/raw/master/images/map_regime.png" target = "blank"><img src="images/map_regime.png"></a>
 
 ---
 
 ### Coefficent Plots - Complete Sample
 
-<img src="images/coefplot.png">
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/coefplot.png" target = "blank"> <img src="images/coefplot.png"></a>
+
 
 ---
 
 ### Coefficent Plots - Democracy Sample
 
-<img src="images/coefplot_dem.png">
+<a href="https://github.com/favstats/delib_slides/raw/master/images/coefplot_dem.png" target = "blank"> <img src="images/coefplot_dem.png"></a>
 
 ---
 
 ### Coefficent Plots - Non-Democracy Sample
 
-<img src="images/coefplot_nondem.png">
 
----
-
-### Model Comparisons
-
-<br>
-<br>
-
-<img src="images/model_comparison.png">
-
----
-
-### Model Comparisons
-
-<br>
-<br>
-
-<img src="images/model_comparison_dem.png">
-
----
-
-### Model Comparisons
-
-<br>
-<br>
-
-<img src="images/model_comparison_nondem.png">
+<a href="https://github.com/favstats/delib_slides/raw/master/images/coefplot_nondem.png" target = "blank"> <img src="images/coefplot_nondem.png"></a>
 
 
 ---
+
+### Model Comparisons - Just Control Models vs. Just Deliberation Models
+
+<br>
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/model_comparison_wo_delibs2.png" target = "blank"> <img src="images/model_comparison_wo_delibs2.png"></a>
+
+---
+
+### Model Comparisons - Complete Sample
+
+<br>
+<br>
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/model_comparison.png" target = "blank"> <img src="images/model_comparison.png"></a>
+
+
+---
+
+### Model Comparisons - Democracy Sample
+
+<br>
+<br>
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/model_comparison_dem.png" target = "blank"> <img src="images/model_comparison_dem.png"></a>
+
+
+
+---
+
+### Model Comparisons - Non-Democracy Sample
+
+<br>
+<br>
+
+
+<a href="https://github.com/favstats/delib_slides/raw/master/images/model_comparison_nondem.png" target = "blank"> <img src="images/model_comparison_nondem.png"></a>
+
+
+
+
 
 
 
