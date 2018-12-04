@@ -1,0 +1,132 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+  \title{}
+  \pretitle{\vspace{\droptitle}}
+  \posttitle{}
+  \author{}
+  \preauthor{}\postauthor{}
+  \date{}
+  \predate{}\postdate{}
+
+
+\begin{document}
+
+Since political theory took its ``deliberative turn''
+{[}@dryzek2000deliberative{]} in the 1990s, political science has
+increasingly turned towards empirically examining deliberation. There
+have been numerous studies about its requirements and consequences. This
+paper is concerned with the latter. Deliberative theory along with
+empirical science has developed manifold assumptions about the effects
+of deliberation, including transformation of preferences, epistemic
+quality, consensus and accommodation, as well as side-effects on civic
+virtues like political trust {[}cf. @bachtiger2013empirische pp.
+164-165{]}. Given the current decline of confidence in governments and
+political institutions in many democracies across the world {[}cf.
+@foa2016democratic{]}, deliberation could be seen as a process to arrive
+at legitimate decisions in societies of increasing complexity {[}see for
+example @habermas1994three pp. 7-8; @warren2015can p. 562{]}. In order
+to examine this legitimacy claim, this paper seeks to investigate
+whether deliberation increases citizens perception of regime legitimacy,
+which is conceptualized and operationalized as regime support. This
+study differs from previous ones in the following terms: it is the first
+to examine the effects of deliberation on regime support in a
+cross-national framework across a large dataset of 316,938 respondents
+from 119 countries across all continents. Moreover, the analysis is not
+restricted to democratic regimes, but also includes
+non-democracies.\footnote{For the purposes of this paper we consequently
+  refer to political systems as non-democratic in accordance with the
+  Polity IV project classification of autocracies and anocracies.} In
+order to account for the variety of regime types, we draw from the
+literature on so called \textit{authoritarian deliberation}, a recent
+theoretical development that conceptualizes deliberation outside of
+democratic contexts {[}see @he2014deliberative; @he2011authoritarian;
+@he2010giving{]}.
+
+The main research question of this thesis states as follows:
+\textit{What role does Deliberation play for regime legitimacy across the world?}
+The following section reviews relevant literature on deliberation and
+derives assumptions to be tested empirically (Section \ref{theory}). The
+next section presents the research design of this study and discusses
+issues critical to the analysis - especially the validity of the
+Deliberative Component Index as well as a possible bias in self-reported
+regime support. Following this, bivariate relationships are examined and
+the results of the estimated multilevel models are presented and
+interpreted in regard to their implications for the theoretical
+assumptions (Section \ref{empirical}). In the end, the findings of the
+analysis will be summarized and the conclusion gives an answer to the
+research question along with a discussion of implications for further
+research (Section \ref{conclusion}).
+
+
+\end{document}
