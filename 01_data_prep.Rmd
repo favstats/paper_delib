@@ -8,13 +8,13 @@ output: html_notebook
 ```{r}
 library(pacman)
 
-#p_install_gh("favstats/favstats")
-p_load(tidyverse, haven,sjmisc,
+#p_install_gh("favstats/tidytemplate")
+p_load(tidyverse, haven, sjmisc,
                      forcats, weights, car,
                      countrycode, lavaan,
                      semTools, lavaan.survey,
-                     survey, reshape2, favstats,
-                     magrittr, skimr, xray)
+                     survey, reshape2, tidytemplate,
+                     magrittr, skimr, xray, wbstats)
 
 range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 ```
@@ -1098,23 +1098,30 @@ merged %>%
   psych::alpha()
 
 merged %>% 
-  select(trust_gov, trust_parliament, 
-           trust_police, trust_courts) %>% 
+  select(trust_gov, 
+         trust_parliament, 
+         trust_police, 
+         trust_courts) %>% 
   psych::KMO()
 
 
 
 merged %<>% 
-  select(trust_gov, trust_parliament, 
-           trust_police, trust_courts) %>% 
-  mutate_all(as.numeric) %<>% 
+  select(trust_gov, 
+         trust_parliament, 
+        # trust_police, 
+         trust_courts) %>% 
+  mutate_all(as.numeric) %>% 
   psych::fa(weight = merged$weight) %>% 
-  psych::predict.psych(data = merged %>% 
-  select(trust_gov, trust_parliament, 
-           trust_police, trust_courts)) %>%
+  psych::predict.psych(
+    data = merged %>% 
+      select(trust_gov, 
+             trust_parliament, 
+            # trust_police, 
+             trust_courts)) %>%
   as.data.frame() %>%
   transmute(gov_trust = range01(MR1)) %>%
-  cbind(merged)
+  bind_cols(merged)
 
 merged
 ```
@@ -1323,11 +1330,11 @@ vdem <- vdems_start %>%
                  value.var=c("e_uds_mean")) %>%
            select(`2000`:`2010`) %>%
            rowMeans) %>%     
-     mutate(gdp_growth10 = vdems_sub %>% 
-           dcast(country_name ~ year, 
-                 value.var=c("e_migdpgrolns")) %>%
-           select(`2000`:`2010`) %>%
-           rowMeans) %>%       
+     # mutate(gdp_growth10 = vdems_sub %>% 
+     #       dcast(country_name ~ year, 
+     #             value.var=c("e_migdpgrolns")) %>%
+     #       select(`2000`:`2010`) %>%
+     #       rowMeans) %>%       
      mutate(infla10 = vdems_sub %>% 
            dcast(country_name ~ year, 
                  value.var=c("e_miinflat")) %>%
@@ -1517,13 +1524,40 @@ gini %<>%
 
 ```
 
+## GDP Growth
+
+```{r}
+wbsearch(pattern = "GDP per capita")
+
+
+growth_data <- wb(indicator = "NY.GDP.MKTP.KD.ZG", startdate = 2000, enddate = 2010)
+gdp_data <- wb(indicator = "NY.GDP.PCAP.PP.CD", startdate = 2000, enddate = 2010)
+
+
+gdp_data %>% 
+  select(iso3c, gdp10 = value) %>% 
+  group_by(iso3c) %>% 
+  summarise_all(mean) %>% 
+  arrange(gdp10)
+
+growth_data <- growth_data %>% 
+  select(iso3c, gdp_growth10 = value) %>% 
+  group_by(iso3c) %>% 
+  summarise_all(mean) %>% 
+  mutate(cntry = countrycode(iso3c, "iso3c","country.name")) %>% 
+  drop_na(cntry)
+  
+```
+
 
 ## Merging Time
 
 ### Level 2
 
 ```{r}
-level2 <- merge(x = qog10, y = vdem, by = "cntry") %>% merge(gini, by = "cntry")
+level2 <- merge(x = qog10, y = vdem, by = "cntry") %>% 
+  merge(gini, by = "cntry") %>% 
+  merge(growth_data, by ="cntry")
 
 level2
 ```
@@ -1572,6 +1606,12 @@ combined <- vdem2 %>%
 
 save(combined,file = "data/combined.Rdata")
 save(level2,file = "data/level2.Rdata")
+
+
+combined %>% 
+  select(cntry, gdp_growth10.y) %>% 
+  group_by(cntry, gdp_growth10.y) %>% 
+  summarise_all(mean)
 ```
 
 
