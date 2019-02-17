@@ -1527,26 +1527,41 @@ gini %<>%
 ## GDP Growth
 
 ```{r}
-wbsearch(pattern = "GDP per capita")
+wbsearch(pattern = "life expectancy")
 
 
 growth_data <- wb(indicator = "NY.GDP.MKTP.KD.ZG", startdate = 2000, enddate = 2010)
 gdp_data <- wb(indicator = "NY.GDP.PCAP.PP.CD", startdate = 2000, enddate = 2010)
+life_data <- wb(indicator = "SP.DYN.LE00.IN", startdate = 2000, enddate = 2010)
 
 
-gdp_data %>% 
+	
+
+gdp_data <- gdp_data %>% 
   select(iso3c, gdp10 = value) %>% 
   group_by(iso3c) %>% 
   summarise_all(mean) %>% 
-  arrange(gdp10)
+  arrange(gdp10) %>% 
+  mutate(cntry = countrycode(iso3c, "iso3c","country.name")) %>% 
+  drop_na(cntry)
 
 growth_data <- growth_data %>% 
   select(iso3c, gdp_growth10 = value) %>% 
   group_by(iso3c) %>% 
   summarise_all(mean) %>% 
   mutate(cntry = countrycode(iso3c, "iso3c","country.name")) %>% 
-  drop_na(cntry)
+  drop_na(cntry) %>% 
+  select(-iso3c)
+
+life_data <- life_data %>% 
+  select(iso3c, lifeexp10 = value) %>% 
+  group_by(iso3c) %>% 
+  summarise_all(mean) %>% 
+  mutate(cntry = countrycode(iso3c, "iso3c","country.name")) %>% 
+  drop_na(cntry) %>% 
+  select(-iso3c)
   
+growth_data
 ```
 
 
@@ -1556,8 +1571,11 @@ growth_data <- growth_data %>%
 
 ```{r}
 level2 <- merge(x = qog10, y = vdem, by = "cntry") %>% 
+  select(-gdp10, -lifeexp10) %>% 
   merge(gini, by = "cntry") %>% 
-  merge(growth_data, by ="cntry")
+  merge(growth_data, by ="cntry") %>% 
+  merge(gdp_data, by ="cntry") %>% 
+  merge(life_data, by ="cntry")
 
 level2
 ```
@@ -1609,9 +1627,12 @@ save(level2,file = "data/level2.Rdata")
 
 
 combined %>% 
-  select(cntry, gdp_growth10.y) %>% 
-  group_by(cntry, gdp_growth10.y) %>% 
+  select(cntry, gdp_growth10) %>% 
+  group_by(cntry, gdp_growth10) %>% 
   summarise_all(mean)
+
+
+combined %>% count(cntry)
 ```
 
 
@@ -1620,26 +1641,39 @@ combined %>%
 
 ## Individual Level
 
-```{r}
+```{r, fig.width=10, fig.height=6}
 combined <- combined %>% 
-                mutate(discuss_round = round(discuss*4)) %>% 
-                mutate(gov_trust_low = case_when(
-                      discuss_round == 2 ~ gov_trust * .9,
-                      discuss_round == 1 ~ gov_trust * .85,
-                      discuss_round %in% c(3,4) ~ gov_trust)) %>% 
-                mutate(gov_trust_high = case_when(
-                      discuss_round == 2 ~ gov_trust * .8,
-                      discuss_round == 1 ~ gov_trust * .75,
-                      discuss_round %in% c(3,4) ~ gov_trust)) %>% 
-                mutate(urbanratio10 = ifelse(is.na(urbanratio10), 
-                                             urbanpop10/100, urbanratio10)) %>% 
-                mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
-                select(cntry, year, gov_trust, gov_trust_low, gov_trust_high, age:ESS, delib10:engage10, polity10,
-                       pol_round, polity_demdummy, polity_anodummy, polity_autodummy, polity_autodummy,
-                       regime, discuss, discuss_round, gdp10, lifeexp10, pop10, 
-                       poly10, riw10, unified_dem10, urbanratio10, weight) %>% 
-  na.omit() %>% 
-  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01)
+  mutate(discuss_round = round(discuss*4)) %>% 
+  mutate(gov_trust_low = case_when(
+    discuss_round == 2 ~ gov_trust * .9,
+    discuss_round == 1 ~ gov_trust * .85,
+    discuss_round %in% c(3,4) ~ gov_trust)) %>% 
+  mutate(gov_trust_high = case_when(
+    discuss_round == 2 ~ gov_trust * .8,
+    discuss_round == 1 ~ gov_trust * .75,
+    discuss_round %in% c(3,4) ~ gov_trust)) %>% 
+  mutate(urbanratio10 = ifelse(is.na(urbanratio10), 
+                               urbanpop10/100, urbanratio10)) %>% 
+  mutate(pop10 = ifelse(is.na(pop10), qogpop10 * 1000000, pop10)) %>% 
+  select(cntry, year, gov_trust, gov_trust_low, gov_trust_high, 
+        age:work, survey:ESS, delib10:engage10, polity10,
+        polity_demdummy, polity_anodummy, polity_autodummy, regime,
+       discuss, discuss_round, gdp10, lifeexp10,  pop10, urbanratio10, gdp_growth10, weight) %>% 
+#   sample_frac(0.01) %>%
+#   visdat::vis_miss(cluster = T, sort_miss = T, show_perc = T)
+# rath::ggpreview(combined2, width = 12, height = 6)
+                # select(cntry, year, gov_trust, gov_trust_low, gov_trust_high, age:ESS, delib10:engage10, polity10,
+                #        pol_round, polity_demdummy, polity_anodummy, polity_autodummy, polity_autodummy,
+                #        regime, discuss, discuss_round, gdp10, lifeexp10, pop10, 
+                #        urbanratio10, gdp_growth10, weight) %>% 
+  na.omit() %>%
+  mutate_at(vars(gov_trust:work, wvs:polity_autodummy, discuss, gdp10:gdp_growth10), range01)
+
+combined %>% 
+  # select(cntry, gdp_growth10) %>% 
+  group_by(cntry) %>% 
+  summarise_all(mean)
+
 
 # combined %>% select(cntry) %>% unique()
 
@@ -1674,18 +1708,18 @@ macro  <- combined %>%
                        polity_autodummy, polity_autodummy,
                        regime, discuss, #discuss_round, 
                        gdp10, lifeexp10, pop10, 
-                       poly10, riw10, unified_dem10, urbanratio10) %>% 
+                       poly10, riw10, unified_dem10, urbanratio10, gdp_growth10) %>% 
                 drop_na(mean_gov) %>% 
                 mutate(count_na = apply(., 1, count_na)) %>% 
-  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10, gdp_growth10), range01)
 
 macro_dem <- macro %>% 
                       filter(polity_demdummy == 1) %>% 
-  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10, gdp_growth10), range01)
 
 macro_aut <- macro %>% 
                       filter(polity_demdummy == 0) %>% 
-  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10), range01)
+  mutate_at(vars(delib10:polity10, polity_demdummy:polity_autodummy, discuss:urbanratio10, gdp_growth10), range01)
 
 # table_stuff2<-subset(table_stuff,
 #                      !is.na(table_stuff$regime) &

@@ -1,0 +1,168 @@
+---
+title: "GDP Growth"
+output: html_notebook
+---
+
+## packages
+
+```{r}
+pacman::p_load(tidyverse, countrycode, tidytemplate)
+```
+
+## data
+
+```{r}
+# vdem8 <- read_csv("C:/Users/Fabio/Documents/Country_Year_V-Dem_Extended_CSV_v8/V-Dem-CY+Others-v8.csv")
+vdems_start_url <- url("https://github.com/favstats/database_delib/raw//master/vdems_start.Rdata")
+
+vdem8 <- tidytemplate::load_it(vdems_start_url)
+
+
+vdems_sub <- vdem8 %>% filter(year %in% 2000:2010)
+
+#tibble(id = 1:1896)
+#table(vdems_sub$country_name)
+
+vdem <- vdem8 %>%
+  filter(year %in% 2000:2010) %>% 
+  group_by(country_name) %>%
+  tally %>%
+  mutate(cntry = unique(country_name)) %>%
+  #DCI Variables
+  mutate(gdp_growth10 = vdems_sub %>%
+           reshape2::dcast(country_name ~ year, 
+                 value.var=c("e_migdpgro")) %>%
+           select(`2000`:`2010`) %>%
+           rowMeans)
+
+vdem <- vdem %>% 
+  mutate(cntry = countrycode(cntry, "country.name", "country.name"))
+
+library(countrycode)
+library(reshape2)
+
+load("data/combined.Rdata")
+
+combined <- combined %>% 
+  select(-gdp_growth10) %>% 
+  group_by(cntry) %>% 
+ # summarise(gov_trust = mean(gov_trust, na.rm = T)) %>% 
+  left_join(vdem) %>% 
+  na.omit()
+
+
+combined_dem <- combined %>% 
+  filter(regime == "demo") %>% 
+  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01) %>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
+
+combined_nondem <- combined %>% 
+  filter(regime != "demo") %>% 
+  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10), range01) %>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
+
+combined %<>% 
+  mutate(pop10 = log(pop10+1)) %>% 
+  mutate(gdp10 = log(gdp10+1)) 
+
+combined %>% 
+  ggplot(aes(gdp_growth10)) + geom_histogram()
+```
+
+## models
+
+```{r}
+library(lme4)
+
+list(
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_low ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_high ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight)
+) -> just_controls1
+
+list(
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_low ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_high ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight)
+) -> just_controls2
+
+
+list(
+lmer(gov_trust ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_low ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight),
+
+lmer(gov_trust_high ~ income + educ + 
+                              work + age + sex + delib10 + polity10 +
+                              pop10 + gdp10 + gdp_growth10+ lifeexp10 + urbanratio10 +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), data = combined, weights = weight)
+) -> just_controls3
+
+
+library(sjPlot)
+
+just_controls1 %>% 
+  purrr::map(~plot_model(.x, show.values = T, show.p = T, sort.est = "sort.all"))
+
+just_controls2 %>% 
+  purrr::map(~plot_model(.x, show.values = T, show.p = T, sort.est = "sort.all"))
+
+just_controls3 %>% 
+  purrr::map(~plot_model(.x, show.values = T, show.p = T, sort.est = "sort.all"))
+
+
+combined %>% 
+  group_by(cntry) %>% 
+  dplyr::summarize(gov_trust = mean(gov_trust, na.rm = T),
+            gdp_growth10 = mean(gdp_growth10, na.rm = T)) %>% 
+  ggplot(aes(gdp_growth10, gov_trust)) +
+  geom_point() +
+  geom_smooth() +
+  ggrepel::geom_text_repel(aes(label = cntry))
+
+source("scripts/helper_functions.R")
+
+just_controls3 %>% 
+  purrr::map(vif.mer)
+
+```
+

@@ -763,10 +763,10 @@ controls_plot %>%
                                           "Regime Support (Low Bias)", 
                                           "Regime Support (High Bias)")),
                        values = rev(gdocs_pal()(3))) +
-  scale_y_continuous(breaks = seq(x_min, 0.45, 0.10), 
-                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.10), 2))  +
+  scale_y_continuous(breaks = seq(x_min, 0.475, 0.10), 
+                     limits = c(x_min, 0.475), labels =  round(seq(x_min, 0.475, 0.10), 2))  +
   # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
-  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.475, 1), 
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                            "Reasoned Justification",
@@ -789,6 +789,7 @@ controls_plot %>%
 
 
 ggsave(gg_controls, filename = "images/gg_controls.png", width = 8, height = 9)
+rath::ggpreview(gg_controls, width = 8, height = 9)
 
 
 # library(tidyverse)
@@ -902,7 +903,7 @@ with_pols_dat %>%
   # ggthemes::scale_colour_gdocs() +
   scale_color_manual(values = rev(gdocs_pal()(3))) +
   ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                       "Democracy (DCI)",
@@ -946,8 +947,8 @@ with_pols_dat %>%
                             "Democracy (ES)"=expression(displaystyle(italic(Democracy (0/1)))), 
                             "Autocracy (ES)"=expression(displaystyle(italic(Autocracy (0/1)))),
                             parse=TRUE), expand = c(0, 1.1)) +
-  scale_y_continuous(breaks = seq(x_min, 0.45, 0.1), 
-                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.1), 2)) +
+  scale_y_continuous(breaks = seq(x_min, 0.475, 0.1), 
+                     limits = c(x_min, 0.475), labels =  round(seq(x_min, 0.475, 0.1), 2)) +
   xlab("") + 
   ylab("Estimate") +
   ggtitle("Individual and Macro Level Controls + Polity/FH Dummies") + 
@@ -1022,10 +1023,10 @@ controls_plot_dem %>%
   ggthemes::theme_hc() +
   ggthemes::scale_color_gdocs("Dependent Variable", 
                                labels = rev(c("Regime Support (No Bias)"))) +
-  scale_y_continuous(breaks = seq(x_min, 0.45, 0.10), 
-                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.10), 2))  +
+  scale_y_continuous(breaks = seq(x_min, 0.475, 0.10), 
+                     limits = c(x_min, 0.475), labels =  round(seq(x_min, 0.475, 0.10), 2))  +
   # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
-  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.475, 1), 
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                            "Reasoned Justification",
@@ -1150,7 +1151,7 @@ with_pols_dat_dem %>%
   ggthemes::scale_colour_gdocs() +
   # scale_color_manual(values = rev(gdocs_pal()(3))) +
   ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                       "Democracy (DCI)",
@@ -1182,8 +1183,8 @@ with_pols_dat_dem %>%
                             "Democracy (RoC)"=expression(displaystyle(italic(Polity/FH))), 
                             "Democracy (ES)"=expression(displaystyle(italic(Polity/FH))), 
                             parse=TRUE), expand = c(0, 1.1)) +
-  scale_y_continuous(breaks = seq(x_min, 0.45, 0.1), 
-                     limits = c(x_min, 0.45), labels =  round(seq(x_min, 0.45, 0.1), 2)) +
+  scale_y_continuous(breaks = seq(x_min, 0.475, 0.1), 
+                     limits = c(x_min, 0.475), labels =  round(seq(x_min, 0.475, 0.1), 2)) +
   xlab("") + 
   ylab("Estimate") +
   ggtitle("Individual and Macro Level Controls + Polity/FH") + 
@@ -1269,10 +1270,10 @@ controls_plot_nondem %>%
                                           "Regime Support (Low Bias)", 
                                           "Regime Support (High Bias)")),
                        values = rev(gdocs_pal()(3))) +
-  scale_y_continuous(breaks = seq(x_min, 0.35, 0.10), 
-                     limits = c(x_min, 0.35), labels =  round(seq(x_min, 0.35, 0.10), 2))  +
+  scale_y_continuous(breaks = seq(x_min, 0.4, 0.10), 
+                     limits = c(x_min, 0.4), labels =  round(seq(x_min, 0.4, 0.10), 2))  +
   # cowplot::background_grid(major = 'xy', minor = "xy") + # add thin horizontal lines
-  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.5, 1), 
+  # geom_vline(xintercept = seq(1.5, length(unique(controls_plot$term)) - 0.475, 1), 
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                            "Reasoned Justification",
@@ -1392,7 +1393,7 @@ with_pols_dat_nondem %>%
   # ggthemes::scale_colour_gdocs() +
   scale_color_manual(values = rev(gdocs_pal()(3))) +
   ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Deliberation Component Index",
                                       "Democracy (DCI)",
@@ -1424,8 +1425,8 @@ with_pols_dat_nondem %>%
                             "Democracy (RoC)"=expression(displaystyle(italic(Polity/FH))), 
                             "Democracy (ES)"=expression(displaystyle(italic(Polity/FH))), 
                             parse=TRUE), expand = c(0, 1.1)) +
-  scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
-                     limits = c(x_min, .35), labels =  round(seq(x_min, 0.35, 0.1), 2)) +
+  scale_y_continuous(breaks = seq(x_min, 0.4, 0.1), 
+                     limits = c(x_min, 0.4), labels =  round(seq(x_min, 0.4, 0.1), 2)) +
   xlab("") + 
   ylab("Estimate") +
   ggtitle("Individual and Macro Level Controls + Polity/FH") + 
@@ -1506,7 +1507,7 @@ just_pols_dat %>%
                                           "Regime Support (High Bias)")),
                        values = rev(gdocs_pal()(3))) +
   # ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Democracy (0/1)",
                                   "Autocracy (0/1)"
@@ -1521,7 +1522,7 @@ just_pols_dat %>%
   ggtitle("Complete Sample") + 
   theme(plot.title = element_text(size=14, face="bold.italic"))  + 
   guides(colour = guide_legend(reverse = T)) +
-  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols
+  theme(plot.title = element_text(hjust = 0.475)) -> gg_just_pols
 
 
 ggsave(gg_just_pols, filename = "images/gg_just_pols.png", width = 8, height = 9)
@@ -1569,7 +1570,7 @@ just_pols_dat_dem %>%
                                labels = rev(c("Regime Support (No Bias)")),
                        values = gdocs_pal()(1)) +
   # ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   #scale_x_discrete(labels = expression(displaystyle(bold(Polity/FH))),  parse=TRUE) +
   # scale_y_continuous(breaks = seq(x_min, 0.35, 0.1), 
@@ -1579,7 +1580,7 @@ just_pols_dat_dem %>%
   ggtitle("Democracy Sample") + 
   theme(plot.title = element_text(size=14, face="bold.italic"))  + 
   guides(colour = guide_legend(reverse=T)) +
-  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols_dem
+  theme(plot.title = element_text(hjust = 0.475)) -> gg_just_pols_dem
 
 
 ggsave(gg_just_pols_dem, filename = "images/gg_just_pols_dem.png", width = 8, height = 9)
@@ -1626,7 +1627,7 @@ just_pols_dat_nondem %>%
                                           "Regime Support (High Bias)")),
                        values = rev(gdocs_pal()(3))) +
   # ggthemes::scale_fill_hc() +
-  # geom_vline(xintercept = seq(4.1, 22 - 0.5, 4),
+  # geom_vline(xintercept = seq(4.1, 22 - 0.475, 4),
   #            lwd = 1, colour = "grey", alpha = 0.7) + # adds neat lines between factors
   scale_x_discrete(limits = rev(c("Polity/FH")),
                    labels = c("Polity/FH"=expression(displaystyle(bold(Polity/FH))),
@@ -1638,7 +1639,7 @@ just_pols_dat_nondem %>%
   ggtitle("Non-Democracy Sample") + 
   theme(plot.title = element_text(size=14, face="bold.italic"))  + 
   guides(colour = guide_legend(reverse=T)) +
-  theme(plot.title = element_text(hjust = 0.5)) -> gg_just_pols_nondem
+  theme(plot.title = element_text(hjust = 0.475)) -> gg_just_pols_nondem
 
 
 ggsave(gg_just_pols_nondem, filename = "images/gg_just_pols_nondem.png", width = 8, height = 9)

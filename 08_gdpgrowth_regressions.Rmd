@@ -59,13 +59,13 @@ load("data/combined.Rdata")
 
 combined_dem <- combined %>% 
   filter(regime == "demo") %>% 
-  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10, gdp_growth10), range01) %>% 
+  mutate_at(vars(gov_trust:work, wvs:polity_autodummy, discuss, gdp10:gdp_growth10), range01) %>% 
   mutate(pop10 = log(pop10+1)) %>% 
   mutate(gdp10 = log(gdp10+1)) 
 
 combined_nondem <- combined %>% 
   filter(regime != "demo") %>% 
-  mutate_at(vars(gov_trust:trust_courts, wvs:polity_autodummy, discuss, gdp10:urbanratio10, gdp_growth10), range01) %>% 
+  mutate_at(vars(gov_trust:work, wvs:polity_autodummy, discuss, gdp10:gdp_growth10), range01) %>% 
   mutate(pop10 = log(pop10+1)) %>% 
   mutate(gdp10 = log(gdp10+1)) 
 
@@ -110,72 +110,138 @@ toc()
 
 ```{r}
 
+dataset <- combined
+
 list(
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_low ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_high ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight)
+                              (1|cntry), data = dataset, weights = weight)
 ) -> just_controls
+
+rm(dataset)
 
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
+multilevels_no <- function(delibs, ...) {
+  result <- lmer(substitute(gov_trust ~ income + educ + 
+                              work + age + sex + i +
+                              afro + latino + americas + asian + ESS +
+                              (1|cntry), list(i = as.name(delibs))) , data = combined, weights = weight, ...)
+  return(result)
+}
+
+multilevel_model <- function(delibs, 
+                             mod_type, 
+                             with_controls = F, 
+                             with_polity = F,
+                             with_politydummies = F,
+                             dataset, ...) {
+  mod_input <- case_when(
+    mod_type == "no" ~ "",
+    mod_type == "low" ~ "_low",
+    mod_type == "high" ~ "_high"
+  )
+  
+  with_control_formula <- ""
+  with_polity_formula <- ""
+  with_politydummies_formula <- ""
+
+
+  
+  if(with_controls) {
+    with_control_formula <- "pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +"
+  } 
+  
+  if(with_polity) {
+    with_polity_formula <- "polity10 +"
+  } 
+  
+  if(with_politydummies) {
+    with_politydummies_formula <- "polity_demdummy + polity_autodummy +"
+  } 
+  
+  formula <- glue::glue("gov_trust{mod_input} ~ income + educ + work + age + sex + {delibs} + {with_polity_formula} {with_politydummies_formula} {with_control_formula} afro + latino + americas + asian + ESS + (1|cntry)")
+  
+  cat(glue::glue("\nFitting model with following specifications:\n IV: {delibs} \n DV: {mod_type} bias gov_trust \n With Controls: {with_controls}\n Polity Controls: {any(c(with_polity, with_politydummies))}\n Dataset: {lazyeval::expr_find(dataset)}\n\n"))
+  
+  result <- lmer(formula, data = dataset, weights = weight, ...)
+  
+  return(result)
+}
+
+multilevel_model("delib10", "high", dataset = combined, with_controls = T, with_politydummies = T)
 
 mods_no <- names(delibs) %>%
-  purrr::map(progressively(multilevels_no, .n = length(delibs)))
+  purrr::map(#progressively(
+    ~multilevel_model(delibs = .x, dataset = combined, mod_type = "no")#, .n = length(delibs))
+    )
 
 mods_low <- names(delibs) %>%
-  purrr::map(progressively(multilevels_low, .n = length(delibs)))
+  purrr::map(#progressively(
+    ~multilevel_model(delibs = .x, dataset = combined, mod_type = "low")#, .n = length(delibs))
+    )
+
 
 mods_high <- names(delibs) %>%
-  purrr::map(progressively(multilevels_high, .n = length(delibs)))
+  purrr::map(#progressively(
+    ~multilevel_model(delibs = .x, dataset = combined, mod_type = "high")#, .n = length(delibs))
+    )
+
+tidify <- function(dataset, bias) {
+  dataset %>%
+    purrr::map(broom::tidy) %>%
+    purrr::map(~create_col(., term)) %>%
+    bind_rows() %>%
+    mutate(bias = bias) %>%
+    na.omit() %>%
+    left_join(mods_no %>%
+                purrr::map(p_value) %>%
+                purrr::map(~create_col(., term)) %>%
+                bind_rows())
+}
 
 rbind(
-mods_no %>%
-  purrr::map(broom::tidy) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows() %>%
-  mutate(bias = "no") %>%
-  na.omit() %>%
-left_join(mods_no %>%
-  purrr::map(p_value) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows()),
-
-mods_low %>%
-  purrr::map(broom::tidy) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows() %>%
-  mutate(bias = "low") %>%
-  na.omit() %>%
-left_join(mods_low %>%
-  purrr::map(p_value) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows()),
-
-mods_high %>%
-  purrr::map(broom::tidy) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows() %>%
-  mutate(bias = "high") %>%
-  na.omit() %>%
-left_join(mods_high %>%
-  purrr::map(p_value) %>%
-  purrr::map(~create_col(., term)) %>%
-  bind_rows())
+  tidify(mods_no, bias = "no"),
+  tidify(mods_low, bias = "low"),
+  tidify(mods_high, bias = "high")
 ) -> wo_controls
+
+# mods_low %>%
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>%
+#   bind_rows() %>%
+#   mutate(bias = "low") %>%
+#   na.omit() %>%
+# left_join(mods_low %>%
+#   purrr::map(p_value) %>%
+#   purrr::map(~create_col(., term)) %>%
+#   bind_rows()),
+# 
+# mods_high %>%
+#   purrr::map(broom::tidy) %>%
+#   purrr::map(~create_col(., term)) %>%
+#   bind_rows() %>%
+#   mutate(bias = "high") %>%
+#   na.omit() %>%
+# left_join(mods_high %>%
+#   purrr::map(p_value) %>%
+#   purrr::map(~create_col(., term)) %>%
+#   bind_rows())
+# ) -> wo_controls
 
 wo_controls %>%
   janitor::clean_names() %>%
@@ -213,13 +279,13 @@ toc()
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_c <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_c, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, mod_type = "no"))
 
 mods2_c <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_low_c, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, mod_type = "low"))
 
 mods3_c <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_high_c, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, mod_type = "high"))
 
 # mods1_c_reml <- names(delibs) %>% 
 #   purrr::map(~multilevels_no_c(.x, REML = F))
@@ -255,7 +321,7 @@ with_controls %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>% 
@@ -296,14 +362,16 @@ toc()
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_pol <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_pol, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, 
+                               with_politydummies = T, mod_type = "no"))
 
 mods2_pol <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_low_pol, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, 
+                               with_politydummies = T, mod_type = "low"))
 
 mods3_pol <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_high_pol, length(delibs)))
-
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined, with_controls = T, 
+                               with_politydummies = T, mod_type = "high"))
 
 
 rbind(
@@ -318,7 +386,7 @@ with_pols %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10","gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%    
@@ -410,12 +478,15 @@ toc()
 
 ```{r}
 
+dataset <- combined_dem
 
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_dem, weights = weight) -> just_controls_dem
+                              (1|cntry), data = dataset, weights = weight) -> just_controls_dem
+
+rm(dataset)
 # delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 # 
 # 
@@ -550,7 +621,7 @@ toc()
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_c_dem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_c_dem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_dem, with_controls = T, mod_type = "no"))
 
 prep_dat(mods1_c_dem, "no") -> with_controls_dem
 
@@ -569,7 +640,7 @@ with_controls_dem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%  
@@ -611,7 +682,11 @@ toc()
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_pol_dem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_pol_dem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_dem, 
+                               with_controls = T, with_polity = T, mod_type = "no"))
+
+# mods1_pol_dem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_no_pol_dem, length(delibs)))
 
 
 
@@ -625,7 +700,7 @@ with_pols_dem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%    
@@ -726,25 +801,29 @@ toc()
 
 ```{r}
 
+dataset <- combined_nondem
+
 list(
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_low ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 +gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_high ~ income + educ + 
                               work + age + sex + 
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight)
+                              (1|cntry), data = dataset, weights = weight)
 ) -> just_controls_nondem
+
+rm(dataset)
 
 # delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 # 
@@ -876,22 +955,20 @@ toc()
 
 ```{r}
 
-
-
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_c_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_c_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, mod_type = "no"))
 
 mods2_c_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_low_c_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, mod_type = "low"))
 
 mods3_c_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_high_c_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, mod_type = "high"))
 
 rbind(prep_dat(mods1_c_nondem, "no"),
-prep_dat(mods2_c_nondem, "low"),
-prep_dat(mods3_c_nondem, "high")) -> with_controls_nondem
+      prep_dat(mods2_c_nondem, "low"),
+      prep_dat(mods3_c_nondem, "high")) -> with_controls_nondem
 
 # anova(mods1_c[[1]], mods1_pol[[1]])
 
@@ -908,7 +985,7 @@ with_controls_nondem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%    
@@ -952,13 +1029,25 @@ toc()
 delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
 
 mods1_pol_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_no_pol_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, 
+                               with_polity = T, mod_type = "no"))
 
 mods2_pol_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_low_pol_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, 
+                               with_polity = T, mod_type = "low"))
 
 mods3_pol_nondem <- names(delibs) %>% 
-  purrr::map(progressively(multilevels_high_pol_nondem, length(delibs)))
+  purrr::map(~multilevel_model(delibs = .x, dataset = combined_nondem, with_controls = T, 
+                               with_polity = T, mod_type = "high"))
+
+# mods1_pol_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_no_pol_nondem, length(delibs)))
+# 
+# mods2_pol_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_low_pol_nondem, length(delibs)))
+# 
+# mods3_pol_nondem <- names(delibs) %>% 
+#   purrr::map(progressively(multilevels_high_pol_nondem, length(delibs)))
 
 
 rbind(
@@ -973,7 +1062,7 @@ with_pols_nondem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%  
@@ -1049,113 +1138,34 @@ toc()
 ```
 
 
-
-### Tables
-
-```{r}
-library(texreg)
-
-# anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
-# delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
-
-screenreg(list(mods1_pol_nondem, mods2_pol_nondem, mods3_pol_nondem) %>% unlist,
-          label = "mods1_pol_nondem",
-          caption = "Bolded coefficients, custom notes, three digits.",
-          float.pos = "h", bold = 0.05, stars = 0,
-          custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
-          digits = 2, leading.zero = FALSE)
-
-# 
-# texreg(list(mods1_pol_nondem[[1]], mods2_pol_nondem[[1]], mods3_pol_nondem[[1]],
-#                mods1_pol_nondem[[3]], mods2_pol_nondem[[3]], mods3_pol_nondem[[3]],
-#                mods1_pol_nondem[[4]], mods2_pol_nondem[[4]], mods3_pol_nondem[[4]],
-#                mods1_pol_nondem[[5]], mods2_pol_nondem[[5]], mods3_pol_nondem[[5]],
-#                mods1_pol_nondem[[2]], mods2_pol_nondem[[2]], mods3_pol_nondem[[2]],
-#                mods1_pol_nondem[[6]], mods2_pol_nondem[[6]], mods3_pol_nondem[[6]]) %>% unlist,
-#           label = "mods1_pol_nondem",
-#           caption = "Bolded coefficients, custom notes, three digits.",
-#           float.pos = "h", bold = 0.10, 
-#           custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
-#           digits = 2, leading.zero = FALSE, stars = c(0.001, 0.01, 0.05, 0.1),
-#           symbol = "^\\dagger", reorder.coef = c(1:6, 9:13, 8, 14:18, 7, 19:23),
-#           groups = list("\\textbf{Individual-Level Control Variables}" = 2:6, 
-#                         "\\textbf{Country-Level Control Variables}" = 7:11,
-#                         "\\textbf{Dataset Control Dummies}" = 12:16,
-#                         "\\textbf{DCI \\& Subcomponents}" = 17:23), 
-#           custom.coef.names =  c("Intercept",
-#                                  "Financial Security",
-#                                  "Education",
-#                                  "Employment (0/1)",
-#                                  "Age",
-#                                  "Sex (Male/Female)",
-#                                  "logged Population",
-#                                  "logged GDP per capita",
-#                                  "Life Expectancy",
-#                                  "Corruption",
-#                                  "Urban Pop. Ratio",
-#                                  "Polity/FH",
-#                                  "Afrobarometer (0/1)",
-#                                  "Latinobarometro (0/1)",
-#                                  "Americasbarometer (0/1)",
-#                                  "Asianbarometer (0/1)",
-#                                  "ESS (0/1)",
-#                                  "DCI",
-#                                  "Reasoned Justification",
-#                                  "Common Good",
-#                                  "Counter-Arguments",
-#                                  "Range of Consultation",
-#                                  "Engaged Society"))
-
-
-
-# screenreg(mods1_pol_nondem[[1]] ,reorder.coef = c(1:6, 9:13, 8, 14:18, 7)), 
-#           custom.coef.names =  c("Intercept",
-#                                  "Education",
-#                                  "Employment (0/1)",
-#                                  "Age",
-#                                  "Sex (Male/Female)",
-#                                  "logged Population",
-#                                  "logged GDP per capita",
-#                                  "Life Expectancy",
-#                                  "Corruption",
-#                                  "Urban Pop. Ratio",
-#                                  "Polity/FH",
-#                                  "Afrobarometer (0/1)",
-#                                  "Latinobarometro (0/1)",
-#                                  "Americasbarometer (0/1)",
-#                                  "Asianbarometer (0/1)",
-#                                  "ESS (0/1)",
-#                                  "DCI"))
-```
-
-
-
 # oNly Polity
 
 ## complete sample
 
 ```{r}
+dataset <- combined
+
 list(
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + polity_demdummy + polity_autodummy +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_low ~ income + educ + 
                               work + age + sex + polity_demdummy + polity_autodummy +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_high ~ income + educ + 
                               work + age + sex + polity_demdummy + polity_autodummy +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined, weights = weight)
+                              (1|cntry), data = dataset, weights = weight)
 ) -> polity_complete
 
-
+rm(dataset)
 
 polity_complete %>% 
    purrr::map(broom::tidy) %>% 
@@ -1163,7 +1173,7 @@ polity_complete %>%
     left_join(polity_complete %>% 
                 purrr::map(p_value) %>% 
                 bind_rows()) %>% 
-  mutate(bias = c(rep("no", 19), rep("low", 19), rep("high", 19))) %>% 
+  mutate(bias = c(rep("no", 20), rep("low", 20), rep("high", 20))) %>% 
   na.omit() -> just_pols
 
 
@@ -1173,7 +1183,7 @@ just_pols %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%    
@@ -1196,12 +1206,16 @@ save(just_pols_dat, file = "data/just_pols_dat.Rdata")
 ## demsample
 
 ```{r}
+
+dataset <- combined_dem
+
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + polity10 +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_dem, weights = weight) -> polity_dem
+                              (1|cntry), data = dataset, weights = weight) -> polity_dem
 
+rm(dataset)
 
 polity_dem %>% 
    broom::tidy() %>% 
@@ -1218,7 +1232,7 @@ just_pols_dem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%   
@@ -1235,27 +1249,30 @@ save(just_pols_dat_dem, file = "data/just_pols_dat_dem.Rdata")
 ## nondemsample
 
 ```{r}
+
+dataset <- combined_nondem
+
 list(
 lmer(gov_trust ~ income + educ + 
                               work + age + sex + polity10 +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_low ~ income + educ + 
                               work + age + sex + polity10 +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight),
+                              (1|cntry), data = dataset, weights = weight),
 
 lmer(gov_trust_high ~ income + educ + 
                               work + age + sex + polity10 +
-                              pop10 + gdp_growth10 + lifeexp10 + urbanratio10 +
+                              pop10 + gdp10 + gdp_growth10 + lifeexp10 + urbanratio10 +
                               afro + latino + americas + asian + ESS +
-                              (1|cntry), data = combined_nondem, weights = weight)
+                              (1|cntry), data = dataset, weights = weight)
 ) -> polity_nondem
 
-
+rm(dataset)
 
 polity_nondem %>% 
    purrr::map(broom::tidy) %>% 
@@ -1263,7 +1280,7 @@ polity_nondem %>%
     left_join(polity_nondem %>% 
                 purrr::map(p_value) %>% 
                 bind_rows()) %>% 
-  mutate(bias = c(rep("no", 18), rep("low", 18), rep("high", 18))) %>% 
+  mutate(bias = c(rep("no", 19), rep("low", 19), rep("high", 19))) %>% 
   na.omit() -> just_pols_nondem
 
 
@@ -1274,7 +1291,7 @@ just_pols_nondem %>%
   filter(term %nin% c("sex","income","educ", 
                       "work", "age", "sex",
                       "afro", "latino", "americas", "asian", "ESS",
-                      "ethnic10", "pop10", "gdp_growth10", "lifeexp10", 
+                      "ethnic10", "pop10", "gdp10", "gdp_growth10", "lifeexp10", 
                       "urbanratio10",
                       "(Intercept)")) %>% 
   mutate(term_cite = term) %>%   
@@ -1296,23 +1313,23 @@ toc()
 
 class(polity_dem)
 
-invisible({
-  sapply(ls(envir = .GlobalEnv), function(x) {
-    obj <- get(x, envir = .GlobalEnv)
-    if (class(obj) == "list") {
-      save(obj, file = paste0("data/mods/", x, ".Rdata"))
-    }
-  })
-})
-
-invisible({
-  sapply(ls(envir = .GlobalEnv), function(x) {
-    obj <- get(x, envir = .GlobalEnv)
-    if (class(obj) == "lmerMod") {
-      save(obj, file = paste0("data/mods/", x, ".Rdata"))
-    }
-  })
-})
+# invisible({
+#   sapply(ls(envir = .GlobalEnv), function(x) {
+#     obj <- get(x, envir = .GlobalEnv)
+#     if (class(obj) == "list") {
+#       save(obj, file = paste0("data/mods/", x, ".Rdata"))
+#     }
+#   })
+# })
+# 
+# invisible({
+#   sapply(ls(envir = .GlobalEnv), function(x) {
+#     obj <- get(x, envir = .GlobalEnv)
+#     if (class(obj) == "lmerMod") {
+#       save(obj, file = paste0("data/mods/", x, ".Rdata"))
+#     }
+#   })
+# })
 ```
 
 
@@ -1417,6 +1434,10 @@ save(full_anovies_wo_delibs, file = "data/full_anovies_wo_delibs.Rdata")
 
 
 
+```
+
+```{r}
+mods1_c
 ```
 
 
@@ -1667,6 +1688,89 @@ save(full_anovies_nondem, file = "data/full_anovies_nondem.Rdata")
 
 toc()
 ```
+
+
+
+
+### Tables
+
+```{r}
+library(texreg)
+
+# anorder <- c("delib10", "reason10", "common10", "countr10", "consult10", "engage10")
+# delibs <- combined %>% select(delib10, consult10, reason10, common10, countr10, engage10)
+
+screenreg(list(mods1_pol_nondem, mods2_pol_nondem, mods3_pol_nondem) %>% unlist,
+          label = "mods1_pol_nondem",
+          caption = "Bolded coefficients, custom notes, three digits.",
+          float.pos = "h", bold = 0.05, stars = 0,
+          custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
+          digits = 2, leading.zero = FALSE)
+
+# 
+# texreg(list(mods1_pol_nondem[[1]], mods2_pol_nondem[[1]], mods3_pol_nondem[[1]],
+#                mods1_pol_nondem[[3]], mods2_pol_nondem[[3]], mods3_pol_nondem[[3]],
+#                mods1_pol_nondem[[4]], mods2_pol_nondem[[4]], mods3_pol_nondem[[4]],
+#                mods1_pol_nondem[[5]], mods2_pol_nondem[[5]], mods3_pol_nondem[[5]],
+#                mods1_pol_nondem[[2]], mods2_pol_nondem[[2]], mods3_pol_nondem[[2]],
+#                mods1_pol_nondem[[6]], mods2_pol_nondem[[6]], mods3_pol_nondem[[6]]) %>% unlist,
+#           label = "mods1_pol_nondem",
+#           caption = "Bolded coefficients, custom notes, three digits.",
+#           float.pos = "h", bold = 0.10, 
+#           custom.note = "Coefficients with $p < 0.05$ in \\textbf{bold}.",
+#           digits = 2, leading.zero = FALSE, stars = c(0.001, 0.01, 0.05, 0.1),
+#           symbol = "^\\dagger", reorder.coef = c(1:6, 9:13, 8, 14:18, 7, 19:23),
+#           groups = list("\\textbf{Individual-Level Control Variables}" = 2:6, 
+#                         "\\textbf{Country-Level Control Variables}" = 7:11,
+#                         "\\textbf{Dataset Control Dummies}" = 12:16,
+#                         "\\textbf{DCI \\& Subcomponents}" = 17:23), 
+#           custom.coef.names =  c("Intercept",
+#                                  "Financial Security",
+#                                  "Education",
+#                                  "Employment (0/1)",
+#                                  "Age",
+#                                  "Sex (Male/Female)",
+#                                  "logged Population",
+#                                  "logged GDP per capita",
+#                                  "Life Expectancy",
+#                                  "Corruption",
+#                                  "Urban Pop. Ratio",
+#                                  "Polity/FH",
+#                                  "Afrobarometer (0/1)",
+#                                  "Latinobarometro (0/1)",
+#                                  "Americasbarometer (0/1)",
+#                                  "Asianbarometer (0/1)",
+#                                  "ESS (0/1)",
+#                                  "DCI",
+#                                  "Reasoned Justification",
+#                                  "Common Good",
+#                                  "Counter-Arguments",
+#                                  "Range of Consultation",
+#                                  "Engaged Society"))
+
+
+
+# screenreg(mods1_pol_nondem[[1]] ,reorder.coef = c(1:6, 9:13, 8, 14:18, 7)), 
+#           custom.coef.names =  c("Intercept",
+#                                  "Education",
+#                                  "Employment (0/1)",
+#                                  "Age",
+#                                  "Sex (Male/Female)",
+#                                  "logged Population",
+#                                  "logged GDP per capita",
+#                                  "Life Expectancy",
+#                                  "Corruption",
+#                                  "Urban Pop. Ratio",
+#                                  "Polity/FH",
+#                                  "Afrobarometer (0/1)",
+#                                  "Latinobarometro (0/1)",
+#                                  "Americasbarometer (0/1)",
+#                                  "Asianbarometer (0/1)",
+#                                  "ESS (0/1)",
+#                                  "DCI"))
+```
+
+
 
 # South East Asia Request
 
